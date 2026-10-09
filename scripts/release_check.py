@@ -32,6 +32,7 @@ REQUIRED_PATHS = (
     ROOT / "edge-engine" / "idr_engine",
     ROOT / "ml" / "idr_ml",
     ROOT / "mobile" / "idr_mobile",
+    ROOT / "rover" / "protocol.py",
 )
 
 

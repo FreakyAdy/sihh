@@ -41,6 +41,9 @@ session result is claimed yet.
   filtered before training.
 - The estimator must expose degraded confidence during outages rather than
   claiming lane-level accuracy without suitable observability.
+- The edge fusion layer exposes bounded correction outputs for acceleration
+  scale, yaw bias, and GNSS gain. The included linear implementation is an
+  integration baseline, not a trained learned-fusion result.
 
 ## Intended use
 

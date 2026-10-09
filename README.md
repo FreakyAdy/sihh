@@ -85,6 +85,7 @@ Repository layers:
 | `edge-engine/idr_engine` | Streaming fusion, constraints, map matching, adapters |
 | `mobile/idr_mobile` | Bounded Python runtime seam for mobile integration |
 | `mobile/app` | Native Android capture, calibration, UI, and runtime binding |
+| `rover` | Versioned physical-testbed telemetry contract and future Pi bridge |
 | `tests/` | Cross-layer deterministic tests |
 | `docs/` | Architecture, model card, benchmark, demo, and release evidence |
 
@@ -133,7 +134,7 @@ Run release certification:
 & 'C:/Program Files/Python314/python.exe' scripts/release_check.py
 ```
 
-Expected current result: 27 tests pass and the synthetic release benchmark
+Expected current result: 35 tests pass and the synthetic release benchmark
 passes the drift and 10 Hz update-rate thresholds.
 
 ## Model workflow
@@ -196,6 +197,9 @@ Next validation milestones:
 3. Import an offline OSM extract into local road segments.
 4. Build and install the Android APK.
 5. Validate mounted orientations, GNSS outages, and recovery on hardware.
+
+The optional [rover testbed](rover/README.md) is a controlled validation
+platform, not a replacement for smartphone or road-speed evidence.
 
 ## Governance and contribution
 

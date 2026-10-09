@@ -108,6 +108,117 @@ class SegmentMapMatcher:
         return None if best is None else best[1]
 
 
+class HmmMapMatcher(SegmentMapMatcher):
+    """Small Viterbi matcher over road segments with graph transitions.
+
+    ``connectivity`` maps a segment index to the indices reachable on the
+    next sample. Candidates use the same distance and heading emission gates
+    as ``SegmentMapMatcher``; the sequence solver adds transition continuity.
+    """
+
+    def __init__(
+        self,
+        segments: Sequence[RoadSegment],
+        connectivity: dict[int, Sequence[int]],
+        *,
+        max_distance_m: float = 20.0,
+        max_heading_error_rad: float = 0.75,
+    ) -> None:
+        super().__init__(
+            segments,
+            max_distance_m=max_distance_m,
+            max_heading_error_rad=max_heading_error_rad,
+        )
+        self._segments = tuple(segments)
+        self._connectivity = {
+            index: tuple(neighbors) for index, neighbors in connectivity.items()
+        }
+
+    def match_sequence(
+        self,
+        observations: Sequence[tuple[float, float, float]],
+    ) -> list[MapConstraint | None]:
+        if not observations:
+            return []
+        layers: list[dict[int, tuple[float, int | None, MapConstraint]]] = []
+        for x_m, y_m, heading_rad in observations:
+            candidates: dict[int, tuple[float, MapConstraint]] = {}
+            for index, segment in enumerate(self._segments):
+                candidate = self._candidate(segment, x_m, y_m, heading_rad)
+                if candidate is not None:
+                    candidates[index] = candidate
+            if not candidates:
+                layers.append({})
+                continue
+            previous = layers[-1] if layers else {}
+            current: dict[int, tuple[float, int | None, MapConstraint]] = {}
+            for index, (emission, candidate) in candidates.items():
+                if not previous:
+                    current[index] = (emission, None, candidate)
+                    continue
+                options = [
+                    (score + emission + self._transition_penalty(previous_index, index),
+                     previous_index)
+                    for previous_index, (score, _, _) in previous.items()
+                    if index in self._connectivity.get(previous_index, ())
+                ]
+                if options:
+                    score, previous_index = min(options)
+                    current[index] = (score, previous_index, candidate)
+            layers.append(current)
+        if any(not layer for layer in layers):
+            return [None for _ in observations]
+        last_index = min(layers[-1], key=lambda index: layers[-1][index][0])
+        result: list[MapConstraint | None] = [None] * len(layers)
+        for layer_index in range(len(layers) - 1, -1, -1):
+            score, previous_index, candidate = layers[layer_index][last_index]
+            result[layer_index] = candidate
+            if previous_index is None:
+                break
+            last_index = previous_index
+        return result
+
+    def _candidate(
+        self,
+        segment: RoadSegment,
+        x_m: float,
+        y_m: float,
+        heading_rad: float,
+    ) -> tuple[float, MapConstraint] | None:
+        dx = segment.end_x_m - segment.start_x_m
+        dy = segment.end_y_m - segment.start_y_m
+        length_squared = dx * dx + dy * dy
+        projection = max(
+            0.0,
+            min(
+                1.0,
+                ((x_m - segment.start_x_m) * dx + (y_m - segment.start_y_m) * dy)
+                / length_squared,
+            ),
+        )
+        candidate_x = segment.start_x_m + projection * dx
+        candidate_y = segment.start_y_m + projection * dy
+        distance = ((candidate_x - x_m) ** 2 + (candidate_y - y_m) ** 2) ** 0.5
+        segment_heading = atan2(dy, dx)
+        heading_error = abs(
+            atan2(sin(segment_heading - heading_rad), cos(segment_heading - heading_rad))
+        )
+        if distance > self._max_distance_m or heading_error > self._max_heading_error_rad:
+            return None
+        return (
+            distance + heading_error * self._max_distance_m,
+            MapConstraint(
+                candidate_x,
+                candidate_y,
+                heading_rad=segment_heading,
+                confidence=max(0.0, 1.0 - distance / self._max_distance_m),
+            ),
+        )
+
+    def _transition_penalty(self, previous_index: int, index: int) -> float:
+        return 0.0 if previous_index == index else 1.0
+
+
 def blend_map_constraint(
     x_m: float,
     y_m: float,

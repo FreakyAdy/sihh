@@ -15,6 +15,8 @@ The current implementation provides:
 - bounded map-matcher corrections during dead reckoning
 - dependency-free segment map matching with distance and heading gating
 - transport-neutral external-IMU adapter
+- active bounded fusion-correction model seam for acceleration, yaw bias, and
+  GNSS gain
 
 The propagation is non-holonomic by construction: the baseline only advances
 along the current vehicle heading and does not introduce lateral or vertical
@@ -26,7 +28,8 @@ implementation. An offline OSM importer can convert road way geometry into
 projected onto the nearest segment and rejected when cross-track distance or
 heading error exceeds configured limits.
 
-The estimator intentionally remains classical while the ML zone develops
-learned speed and sensor corrections. Map matching and non-holonomic
-constraints should be added behind bounded correction interfaces rather than
-silently replacing the estimator state.
+`LinearFusionCorrection` is a transparent adaptive baseline that is applied
+inside propagation and GNSS recovery. It is the integration point for a
+trained model to predict acceleration scale, yaw drift, and measurement gain.
+The default `NoOpFusionCorrection` preserves the classical behavior until
+trained weights and real-trace evidence are available.

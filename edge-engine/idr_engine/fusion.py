@@ -2,12 +2,66 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Protocol
 
 from idr.models import GnssFix, NavigationMode, NavigationState, SensorFrame
 from idr.replay import _project_fix
 
 from .constraints import MapMatcher
+
+
+@dataclass(frozen=True)
+class FusionCorrection:
+    """Bounded learned correction applied inside the classical filter."""
+
+    acceleration_scale: float = 1.0
+    yaw_rate_bias_rps: float = 0.0
+    gnss_gain: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.acceleration_scale <= 2.0:
+            raise ValueError("acceleration_scale must be between 0 and 2")
+        if not math.isfinite(self.yaw_rate_bias_rps):
+            raise ValueError("yaw_rate_bias_rps must be finite")
+        if not 0.0 < self.gnss_gain <= 1.0:
+            raise ValueError("gnss_gain must be in (0, 1]")
+
+
+class FusionCorrectionModel(Protocol):
+    def predict(self, frame: SensorFrame) -> FusionCorrection:
+        """Predict bounded propagation and GNSS correction terms."""
+
+
+class NoOpFusionCorrection:
+    def predict(self, frame: SensorFrame) -> FusionCorrection:
+        return FusionCorrection()
+
+
+class LinearFusionCorrection:
+    """Transparent adaptive correction baseline for future learned weights."""
+
+    def __init__(
+        self,
+        acceleration_scale_bias: float = 1.0,
+        acceleration_scale_abs_accel_weight: float = 0.0,
+        yaw_bias_weight: float = 0.0,
+        gnss_gain: float = 1.0,
+    ) -> None:
+        self._acceleration_scale_bias = acceleration_scale_bias
+        self._acceleration_scale_abs_accel_weight = acceleration_scale_abs_accel_weight
+        self._yaw_bias_weight = yaw_bias_weight
+        self._gnss_gain = gnss_gain
+
+    def predict(self, frame: SensorFrame) -> FusionCorrection:
+        acceleration = frame.imu.forward_acceleration_mps2
+        scale = self._acceleration_scale_bias + (
+            self._acceleration_scale_abs_accel_weight * abs(acceleration)
+        )
+        return FusionCorrection(
+            acceleration_scale=max(0.0, min(2.0, scale)),
+            yaw_rate_bias_rps=max(-1.0, min(1.0, self._yaw_bias_weight * acceleration)),
+            gnss_gain=max(0.01, min(1.0, self._gnss_gain)),
+        )
 
 
 @dataclass(frozen=True)
@@ -45,9 +99,11 @@ class FusionEngine:
         config: FusionConfig | None = None,
         initial_fix: GnssFix | None = None,
         map_matcher: MapMatcher | None = None,
+        correction_model: FusionCorrectionModel | None = None,
     ) -> None:
         self.config = config or FusionConfig()
         self._map_matcher = map_matcher
+        self._correction_model = correction_model or NoOpFusionCorrection()
         self._origin = initial_fix
         self._x_m = 0.0
         self._y_m = 0.0
@@ -67,20 +123,31 @@ class FusionEngine:
             raise ValueError("timestamp gap exceeds fusion limit")
         self._last_timestamp_s = timestamp
 
-        self._propagate(frame, dt_s)
+        correction = self._correction_model.predict(frame)
+        self._propagate(frame, dt_s, correction)
         if frame.gnss is None:
             state = self._handle_missing_gnss(timestamp)
             return self._apply_map_constraint(state)
-        return self._handle_gnss(frame.gnss, timestamp)
+        return self._handle_gnss(frame.gnss, timestamp, correction)
 
     def replay(self, frames: Iterable[SensorFrame]) -> list[NavigationState]:
         return [self.update(frame) for frame in frames]
 
-    def _propagate(self, frame: SensorFrame, dt_s: float) -> None:
-        self._heading_rad += frame.imu.yaw_rate_rps * dt_s
+    def _propagate(
+        self,
+        frame: SensorFrame,
+        dt_s: float,
+        correction: FusionCorrection,
+    ) -> None:
+        self._heading_rad += (
+            frame.imu.yaw_rate_rps - correction.yaw_rate_bias_rps
+        ) * dt_s
         self._speed_mps = max(
             0.0,
-            self._speed_mps + frame.imu.forward_acceleration_mps2 * dt_s,
+            self._speed_mps
+            + frame.imu.forward_acceleration_mps2
+            * correction.acceleration_scale
+            * dt_s,
         )
         distance_m = self._speed_mps * dt_s
         self._x_m += math.cos(self._heading_rad) * distance_m
@@ -98,27 +165,44 @@ class FusionEngine:
         confidence = max(0.0, 1.0 - outage_duration / self.config.confidence_decay_s)
         return self._state(timestamp_s, confidence, outage_duration)
 
-    def _handle_gnss(self, fix: GnssFix, timestamp_s: float) -> NavigationState:
+    def _handle_gnss(
+        self,
+        fix: GnssFix,
+        timestamp_s: float,
+        correction: FusionCorrection,
+    ) -> NavigationState:
+        initializing = self._origin is None
         if self._origin is None:
             self._origin = fix
         projected_x, projected_y = _project_fix(fix, self._origin)
         self._recovery_count += 1
         if self._mode in (NavigationMode.INITIALIZING, NavigationMode.GNSS_AIDED):
-            self._apply_gnss(fix, projected_x, projected_y)
+            self._apply_gnss(
+                fix,
+                projected_x,
+                projected_y,
+                1.0 if initializing else correction.gnss_gain,
+            )
             self._mode = NavigationMode.GNSS_AIDED
         elif self._recovery_count >= self.config.recovery_confirm_count:
-            self._apply_gnss(fix, projected_x, projected_y)
+            self._apply_gnss(fix, projected_x, projected_y, correction.gnss_gain)
             self._mode = NavigationMode.GNSS_AIDED
             self._outage_started_s = None
         confidence = self._gnss_confidence(fix)
         outage_duration = 0.0 if self._outage_started_s is None else timestamp_s - self._outage_started_s
         return self._state(timestamp_s, confidence, outage_duration)
 
-    def _apply_gnss(self, fix: GnssFix, x_m: float, y_m: float) -> None:
-        self._x_m = x_m
-        self._y_m = y_m
+    def _apply_gnss(
+        self,
+        fix: GnssFix,
+        x_m: float,
+        y_m: float,
+        gain: float,
+    ) -> None:
+        self._x_m += (x_m - self._x_m) * gain
+        self._y_m += (y_m - self._y_m) * gain
         if fix.speed_mps is not None:
-            self._speed_mps = fix.speed_mps
+            self._speed_mps += (fix.speed_mps - self._speed_mps) * gain
 
     def _state(self, timestamp_s: float, confidence: float, outage_duration_s: float) -> NavigationState:
         return NavigationState(

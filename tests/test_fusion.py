@@ -9,10 +9,13 @@ from idr.models import GnssFix, ImuSample, NavigationMode, SensorFrame
 from idr.synthetic import METERS_PER_DEGREE
 from idr_engine import (
     FusionConfig,
+    FusionCorrection,
     FusionEngine,
+    LinearFusionCorrection,
     MapConstraint,
     RoadSegment,
     SegmentMapMatcher,
+    HmmMapMatcher,
     frame_from_external,
 )
 
@@ -77,6 +80,28 @@ class FusionTests(unittest.TestCase):
         self.assertEqual(frame.imu.timestamp_s, 1.0)
         self.assertEqual(frame.gnss.speed_mps, 4.0)
 
+    def test_correction_model_changes_inertial_propagation(self) -> None:
+        frame = SensorFrame(
+            ImuSample(0.0, 0.0, 0.0),
+            GnssFix(0.0, 0.0, 0.0, speed_mps=2.0),
+        )
+        corrected = FusionEngine(
+            correction_model=LinearFusionCorrection(
+                acceleration_scale_bias=0.0,
+                yaw_bias_weight=0.5,
+                gnss_gain=0.5,
+            )
+        )
+        corrected.update(frame)
+        corrected.update(SensorFrame(ImuSample(0.5, 2.0, 0.0), None))
+        state = corrected.update(SensorFrame(ImuSample(1.0, 2.0, 0.0), None))
+        self.assertEqual(state.mode, NavigationMode.DEAD_RECKONING)
+        self.assertAlmostEqual(state.speed_mps, 2.0)
+
+    def test_correction_bounds_are_explicit(self) -> None:
+        with self.assertRaises(ValueError):
+            FusionCorrection(acceleration_scale=3.0)
+
     def test_segment_matcher_projects_to_heading_compatible_road(self) -> None:
         matcher = SegmentMapMatcher(
             [RoadSegment(0.0, 0.0, 100.0, 0.0, road_id="east-west")],
@@ -96,6 +121,19 @@ class FusionTests(unittest.TestCase):
             max_heading_error_rad=0.2,
         )
         self.assertIsNone(matcher.match(40.0, 2.0, 1.57))
+
+    def test_hmm_matcher_uses_connected_segment_sequence(self) -> None:
+        matcher = HmmMapMatcher(
+            [
+                RoadSegment(0.0, 0.0, 10.0, 0.0),
+                RoadSegment(10.0, 0.0, 20.0, 0.0),
+            ],
+            {0: (0, 1), 1: (1,)},
+        )
+        matches = matcher.match_sequence([(4.0, 1.0, 0.0), (14.0, -1.0, 0.0)])
+        self.assertEqual(len(matches), 2)
+        self.assertAlmostEqual(matches[0].x_m, 4.0)  # type: ignore[union-attr]
+        self.assertAlmostEqual(matches[1].x_m, 14.0)  # type: ignore[union-attr]
 
 
 if __name__ == "__main__":
