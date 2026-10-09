@@ -1,6 +1,9 @@
 <resources>
     <style name="Theme.IDR" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#1565C0</item>
+        <item name="android:colorAccent">@color/idr_blue</item>
+        <item name="android:navigationBarColor">@color/idr_surface</item>
+        <item name="android:statusBarColor">@color/idr_map</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

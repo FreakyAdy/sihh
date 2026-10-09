@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">IDR Navigation</string>
     <string name="request_location">Location permission is required for GNSS-aided navigation.</string>
+    <string name="mode_initializing">INITIALIZING</string>
+    <string name="route_summary">Ready for the next route</string>
+    <string name="position_waiting">Position waiting for a GNSS origin</string>
+    <string name="diagnostics_waiting">Sensors are standing by. Start navigation to begin.</string>
+    <string name="start_navigation">Start navigation</string>
+    <string name="calibrate">Calibrate frame</string>
 </resources>

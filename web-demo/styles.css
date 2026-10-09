@@ -1,0 +1,55 @@
+:root {
+  color-scheme: light;
+  --ink: #172335;
+  --muted: #64748b;
+  --blue: #1769e0;
+  --map: #eaf2f8;
+  --surface: rgba(250, 252, 255, .96);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #dfe9f1;
+  color: var(--ink);
+}
+
+button { font: inherit; cursor: pointer; }
+.phone-shell { width: min(100vw, 440px); min-height: 760px; padding: 12px; }
+.map { position: relative; height: min(92vh, 760px); min-height: 680px; overflow: hidden; border-radius: 34px; background: var(--map); box-shadow: 0 24px 70px rgba(33, 55, 75, .2); }
+.map-grid { position: absolute; inset: 0; opacity: .55; background-image: linear-gradient(32deg, transparent 47%, #d2e1ec 48%, transparent 50%), linear-gradient(118deg, transparent 47%, #d2e1ec 48%, transparent 50%); background-size: 90px 120px; }
+.route { position: absolute; inset: 0; width: 100%; height: 100%; }
+.road { fill: none; stroke: #fff; stroke-width: 26; stroke-linecap: round; opacity: .92; }
+.route-line { fill: none; stroke: var(--blue); stroke-width: 8; stroke-linecap: round; }
+#vehicle { fill: #fff; stroke: var(--blue); stroke-width: 6; transition: cx .5s, cy .5s; }
+.destination { fill: var(--blue); stroke: #fff; stroke-width: 5; }
+.status-card, .sheet { position: absolute; left: 18px; right: 18px; background: var(--surface); box-shadow: 0 10px 28px rgba(36, 57, 76, .14); backdrop-filter: blur(14px); }
+.status-card { top: 18px; border-radius: 20px; padding: 16px; }
+.brand, .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--muted); }
+.status-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.status-pill { padding: 5px 9px; border-radius: 99px; color: var(--blue); background: #e5efff; font-size: 11px; font-weight: 800; }
+.map-actions { position: absolute; top: 150px; right: 18px; display: grid; gap: 8px; }
+.map-actions button { width: 44px; height: 44px; border: 1px solid #d7e3ec; border-radius: 14px; background: var(--surface); color: var(--ink); font-size: 22px; box-shadow: 0 6px 18px rgba(36, 57, 76, .1); }
+.sheet { bottom: 0; border-radius: 28px 28px 20px 20px; padding: 12px 20px 20px; }
+.handle { width: 38px; height: 4px; margin: 0 auto 18px; border-radius: 8px; background: #cbd7e2; }
+h1 { margin: 7px 0 4px; font-size: 24px; line-height: 1.15; }
+.sheet p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.metrics { display: flex; gap: 28px; margin: 20px 0 12px; }
+.metrics div { display: grid; gap: 2px; }
+.metrics strong { font-size: 20px; }
+.metrics span { color: var(--muted); font-size: 11px; }
+.progress { height: 5px; overflow: hidden; border-radius: 8px; background: #dbe6ef; }
+.progress span { display: block; height: 100%; width: 0; background: var(--blue); transition: width .5s; }
+.sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+.sheet-actions button { flex: 1; min-height: 48px; border-radius: 13px; border: 0; font-weight: 700; }
+.primary { background: var(--blue); color: white; }
+.secondary { border: 1px solid #d5e0ea !important; background: transparent; color: var(--ink); }
+.diagnostics { margin-top: 12px !important; font-size: 11px !important; }
+
+@media (min-width: 700px) {
+  .phone-shell { width: 440px; }
+}

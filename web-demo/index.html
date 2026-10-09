@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDR Navigation Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="phone-shell" aria-label="IDR navigation replay">
+    <section class="map" aria-label="Deterministic route replay map">
+      <div class="map-grid"></div>
+      <svg class="route" viewBox="0 0 420 680" role="img" aria-label="Blue route with vehicle marker">
+        <path class="road" d="M42 585 C120 520 92 430 180 376 S318 270 274 92"></path>
+        <path class="route-line" d="M42 585 C120 520 92 430 180 376 S318 270 274 92"></path>
+        <circle id="vehicle" cx="42" cy="585" r="12"></circle>
+        <circle class="destination" cx="274" cy="92" r="8"></circle>
+      </svg>
+      <header class="status-card">
+        <div class="brand">IDR NAVIGATION</div>
+        <div class="status-row">
+          <span id="mode" class="status-pill">READY</span>
+          <span id="confidence">Confidence --</span>
+        </div>
+      </header>
+      <div class="map-actions" aria-label="Map controls">
+        <button type="button" aria-label="Zoom in">+</button>
+        <button type="button" aria-label="Zoom out">−</button>
+        <button type="button" aria-label="Recenter route">◎</button>
+      </div>
+      <section class="sheet">
+        <div class="handle"></div>
+        <div class="eyebrow">NEXT ROUTE</div>
+        <h1 id="instruction">Ready for the next route</h1>
+        <p id="subline">Start the deterministic replay to inspect GNSS outage handling.</p>
+        <div class="metrics">
+          <div><strong id="speed">0</strong><span>km/h</span></div>
+          <div><strong id="distance">0.0</strong><span>km</span></div>
+          <div><strong id="update">10</strong><span>Hz</span></div>
+        </div>
+        <div class="progress"><span id="progress"></span></div>
+        <div class="sheet-actions">
+          <button id="replay" class="primary">Start replay</button>
+          <button id="reset" class="secondary">Reset</button>
+        </div>
+        <p id="diagnostics" class="diagnostics" aria-live="polite">Replay is idle.</p>
+      </section>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

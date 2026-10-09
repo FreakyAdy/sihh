@@ -1,0 +1,7 @@
+<resources>
+    <color name="idr_map">#EAF2F8</color>
+    <color name="idr_blue">#1769E0</color>
+    <color name="idr_ink">#172335</color>
+    <color name="idr_muted">#617086</color>
+    <color name="idr_surface">#F7FBFF</color>
+</resources>
