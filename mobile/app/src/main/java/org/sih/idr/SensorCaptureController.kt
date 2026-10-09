@@ -12,6 +12,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 
 data class PhoneSensorSample(
@@ -49,11 +50,13 @@ class SensorCaptureController(
     private var latestGyroscope = FloatArray(3)
     private var latestMagneticField = FloatArray(3)
     private var latestLocation: Location? = null
+    private var latestLocationReceivedNanos = 0L
     private var running = false
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
             latestLocation = location
+            latestLocationReceivedNanos = SystemClock.elapsedRealtimeNanos()
         }
 
         override fun onProviderEnabled(provider: String) {
@@ -142,7 +145,11 @@ class SensorCaptureController(
                 magneticFieldX = latestMagneticField[0],
                 magneticFieldY = latestMagneticField[1],
                 magneticFieldZ = latestMagneticField[2],
-                location = latestLocation?.let(::Location),
+                location = latestLocation
+                    ?.takeIf {
+                        event.timestamp - latestLocationReceivedNanos <= LOCATION_FRESHNESS_NS
+                    }
+                    ?.let(::Location),
             ),
         )
     }
@@ -164,5 +171,6 @@ class SensorCaptureController(
     companion object {
         private const val LOCATION_INTERVAL_MS = 1000L
         private const val LOCATION_DISTANCE_M = 0f
+        private const val LOCATION_FRESHNESS_NS = 1_500_000_000L
     }
 }

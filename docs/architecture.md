@@ -94,3 +94,9 @@ pass the resulting calibrated samples to the native fusion binding.
 stationary gravity stability followed by forward motion with a GNSS bearing
 and speed. Its result contains pitch, roll, heading, and the selected device
 forward axis.
+
+`NativeNavigationEngine.kt` is the current Kotlin runtime seam. It consumes
+only `VehicleImuSample`, initializes from GNSS, propagates position during a
+confirmed outage, decays confidence, and requires consecutive GNSS fixes for
+recovery. `SpeedCorrectionModel` is injectable so exported ML coefficients can
+be used without changing the estimator state machine.

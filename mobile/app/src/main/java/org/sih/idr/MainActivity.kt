@@ -13,6 +13,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sensorCapture: SensorCaptureController
     private val vehicleFrameAdapter = VehicleFrameAdapter()
     private val vehicleCalibration = VehicleCalibration()
+    private val navigationEngine = NativeNavigationEngine()
     private var sampleCount = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,22 +28,35 @@ class MainActivity : AppCompatActivity() {
                     sampleCount += 1
                     val calibrationResult = vehicleCalibration.observe(sample)
                     if (calibrationResult != null) {
+                        navigationEngine.reset()
                         vehicleFrameAdapter.configure(
                             calibrationResult.vehicleHeadingRad,
                             calibrationResult.forwardAxis,
                         )
                     }
-                    val locationText = sample.location?.let {
-                        "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
-                    } ?: "GNSS: waiting for fix"
-                    binding.position.text = locationText
-                    val mode = if (vehicleFrameAdapter.isConfigured()) {
-                        "Mode: Vehicle-frame adapter ready"
-                    } else {
-                        "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
+                    var diagnostic = "Diagnostics: $sampleCount samples received"
+                    try {
+                        if (vehicleFrameAdapter.isConfigured()) {
+                            val estimate = navigationEngine.update(vehicleFrameAdapter.adapt(sample))
+                            binding.position.text = estimate.latitude?.let { latitude ->
+                                "Position: %.5f, %.5f".format(latitude, estimate.longitude)
+                            } ?: "Position: waiting for GNSS origin"
+                            binding.mode.text =
+                                "Mode: ${estimate.mode.name.replace('_', ' ')} " +
+                                    "(confidence %.2f)".format(estimate.confidence)
+                        } else {
+                            binding.position.text = sample.location?.let {
+                                "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
+                            } ?: "GNSS: waiting for fix"
+                            binding.mode.text =
+                                "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
+                        }
+                    } catch (error: IllegalArgumentException) {
+                        diagnostic = "Diagnostics: rejected sensor sample (${error.message})"
+                    } catch (error: IllegalStateException) {
+                        diagnostic = "Diagnostics: navigation unavailable (${error.message})"
                     }
-                    binding.mode.text = mode
-                    binding.diagnostics.text = "Diagnostics: $sampleCount samples received"
+                    binding.diagnostics.text = diagnostic
                 }
 
                 override fun onHealthChanged(message: String) {
@@ -52,6 +66,8 @@ class MainActivity : AppCompatActivity() {
         )
         binding.calibrate.setOnClickListener {
             vehicleCalibration.reset()
+            vehicleFrameAdapter.reset()
+            navigationEngine.reset()
             binding.mode.text = "Mode: Calibration stationary"
             binding.diagnostics.text = "Diagnostics: keep phone still, then drive straight"
         }

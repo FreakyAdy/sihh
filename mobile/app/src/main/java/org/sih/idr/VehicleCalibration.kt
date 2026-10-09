@@ -95,17 +95,15 @@ class VehicleCalibration(
             stationary.accelerationZ.toDouble(),
         )
         val bearingRad = Math.toRadians(motionSamples.mapNotNull { it.location?.bearing?.toDouble() }.average())
-        val forwardAcceleration = motionSamples.map {
-            val correctedX = it.accelerationX - stationary.accelerationX
-            val correctedY = it.accelerationY - stationary.accelerationY
-            hypot(correctedX, correctedY)
-        }.average()
-        val axis = if (abs(motionSamples.map { it.accelerationX }.average()) >=
-            abs(motionSamples.map { it.accelerationY }.average())
-        ) {
-            DeviceForwardAxis.POSITIVE_X
-        } else {
+        val meanX = motionSamples.map { it.accelerationX - stationary.accelerationX }.average()
+        val meanY = motionSamples.map { it.accelerationY - stationary.accelerationY }.average()
+        val forwardAcceleration = hypot(meanX, meanY)
+        val axis = if (abs(meanX) >= abs(meanY)) {
+            if (meanX >= 0.0) DeviceForwardAxis.POSITIVE_X else DeviceForwardAxis.NEGATIVE_X
+        } else if (meanY >= 0.0) {
             DeviceForwardAxis.POSITIVE_Y
+        } else {
+            DeviceForwardAxis.NEGATIVE_Y
         }
         if (!forwardAcceleration.isFinite() || !bearingRad.isFinite()) {
             stage = CalibrationStage.FAILED

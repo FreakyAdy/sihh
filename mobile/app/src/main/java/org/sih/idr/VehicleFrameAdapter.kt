@@ -32,6 +32,11 @@ class VehicleFrameAdapter {
 
     fun isConfigured(): Boolean = vehicleHeadingRad != null
 
+    fun reset() {
+        vehicleHeadingRad = null
+        deviceForwardAxis = DeviceForwardAxis.POSITIVE_Y
+    }
+
     fun adapt(sample: PhoneSensorSample): VehicleImuSample {
         val heading = vehicleHeadingRad
             ?: throw IllegalStateException("vehicle frame is not calibrated")
