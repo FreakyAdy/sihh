@@ -9,17 +9,17 @@ result is inferred from synthetic tests.
 
 | Area | Status | Current evidence | Main gap |
 | --- | --- | --- | --- |
-| Shared contracts and replay | Done | [`shared/idr`](../shared/idr) and 27 tests | None for the baseline contract |
+| Shared contracts and replay | Done | [`shared/idr`](../shared/idr) and 35 tests | None for the baseline contract |
 | Android capture and staged calibration | Partial | [`mobile/app`](../mobile/app) | APK build and physical-device validation |
 | Speed estimation | Partial | [`ml/idr_ml/model.py`](../ml/idr_ml/model.py) | Trained temporal model and measured phone inference |
 | GNSS/INS fusion | Partial | [`edge-engine/idr_engine/fusion.py`](../edge-engine/idr_engine/fusion.py) | Learned adaptive fusion correction and real-trace evaluation |
 | Non-holonomic constraints | Done for baseline | [`fusion.py`](../edge-engine/idr_engine/fusion.py) | ESKF/UKF-grade uncertainty model |
-| Map matching | Partial | [`constraints.py`](../edge-engine/idr_engine/constraints.py) | OSM import and HMM road-graph matching |
+| Map matching | Partial | [`constraints.py`](../edge-engine/idr_engine/constraints.py) with segment and HMM matchers | OSM import and real-trace evaluation |
 | External IMU support | Partial | [`adapters.py`](../edge-engine/idr_engine/adapters.py) | 200 Hz contract and high-rate replay evidence |
 | IO-VNBD evaluation | Missing | [`io_vnbd.py`](../ml/idr_ml/io_vnbd.py) is an adapter only | Dataset cache, verified schema, outage evaluation |
 | Position plots | Partial | [`docs/evidence`](evidence) | Current plot is synthetic only; three real-trace plots missing |
 | Android on-device ML | Partial | [`NativeNavigationEngine.kt`](../mobile/app/src/main/java/org/sih/idr/NativeNavigationEngine.kt) | Artifact loading exists, trained artifact and latency measurement missing |
-| Rover testbed | Missing | No `rover/` directory | Hardware, firmware, bridge, truth course, and experiments |
+| Rover testbed | Partial | [`rover/protocol.py`](../rover/protocol.py) and [`rover/README.md`](../rover/README.md) | Hardware, firmware, bridge, truth course, and experiments |
 | Release reproducibility | Partial | [`scripts/release_check.py`](../scripts/release_check.py) | Regeneration and README-number consistency checks |
 
 ## Requirement-by-requirement audit
@@ -253,8 +253,8 @@ The following terms must remain qualified until their evidence exists:
   temporal neural model.
 - “AI-based fusion”: current fusion is classical with an injectable model
   seam; no learned fusion correction is active.
-- “Map matching”: current implementation is segment projection, not HMM OSM
-  graph matching.
+- “Map matching”: segment and HMM matching primitives exist, but OSM import
+  and real-trace graph evaluation are not complete.
 - “Real-time mobile navigation”: Android code exists, but APK and hardware
   execution are unverified in this environment.
 - “External IMU at 200 Hz”: the adapter is transport-neutral, but no 200 Hz
@@ -265,7 +265,7 @@ The following terms must remain qualified until their evidence exists:
 1. Obtain and document the permitted IO-VNBD subset and schema.
 2. Implement real outage evaluation and aggregate statistics.
 3. Train and export the speed model, then measure Android parity and latency.
-4. Add OSM import and HMM graph matching.
+4. Add OSM import and evaluate the HMM graph matcher on a real trace.
 5. Build and validate the Android application on a physical phone.
 6. Add the rover firmware, bridge, truth course, and experiments.
 7. Regenerate all evidence and update the requirements matrix before release.
