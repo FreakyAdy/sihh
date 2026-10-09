@@ -24,7 +24,10 @@ The native application shell is under `app/`. It currently provides:
 - Gradle/Kotlin Android project configuration
 - runtime location permission request
 - a diagnostic-first navigation screen
-- explicit placeholder state until the sensor adapter is wired
+- accelerometer, gyroscope, and GPS provider capture
+- optional magnetometer capture for heading calibration
+- lifecycle-safe sensor registration/unregistration
+- explicit sample counts and provider health diagnostics
 
 Build locally after installing Gradle and an Android SDK:
 
@@ -32,6 +35,6 @@ Build locally after installing Gradle and an Android SDK:
 gradlew.bat :app:assembleDebug
 ```
 
-The shell intentionally does not claim live sensor support yet; the next
-mobile implementation step is to connect Android accelerometer, gyroscope,
-magnetometer, and GNSS callbacks to the shared runtime contract.
+The current native callback emits calibrated-frame input prerequisites, but the
+vehicle-frame alignment and engine adapter are still pending. It intentionally
+does not present raw device-frame values as lane-level navigation output.
