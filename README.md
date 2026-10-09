@@ -111,6 +111,7 @@ Evidence:
 - [Requirements matrix](docs/requirements-matrix.md)
 - [Limitations](docs/limitations.md)
 - [Data provenance record](docs/data-provenance.md)
+- [IO-VNBD evaluation harness](docs/io-vnbd-evaluation.md)
 
 Generate the evidence again:
 

@@ -25,6 +25,7 @@ REQUIRED_PATHS = (
     ROOT / "docs" / "requirements-matrix.md",
     ROOT / "docs" / "data-provenance.md",
     ROOT / "docs" / "limitations.md",
+    ROOT / "docs" / "io-vnbd-evaluation.md",
     ROOT / "docs" / "evidence" / "synthetic-1km-report.json",
     ROOT / "docs" / "evidence" / "synthetic-1km-trajectory.svg",
     ROOT / "shared" / "idr",
