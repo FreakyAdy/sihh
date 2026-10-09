@@ -126,6 +126,7 @@ Evidence:
 - [IO-VNBD evaluation harness](docs/io-vnbd-evaluation.md)
 - [Judge presentation playbook](docs/presentation-playbook.md)
 - [Production frontend handoff](docs/frontend-handoff.md)
+- [Complete IDE project context handoff](docs/PROJECT-CONTEXT-HANDOFF.md)
 
 Generate the evidence again:
 
