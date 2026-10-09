@@ -146,11 +146,10 @@ class NativeNavigationEngine(
     private fun estimate(timestampSeconds: Double): NativeNavigationEstimate {
         val reference = origin
         val latitude = reference?.latitude
-        // Heading zero is north, so northing updates latitude and easting
-        // updates longitude.
-        val adjustedLatitude = reference?.let { it.latitude + yMeters / METERS_PER_DEGREE }
+        // Heading zero is north: x is northing and y is easting.
+        val adjustedLatitude = reference?.let { it.latitude + xMeters / METERS_PER_DEGREE }
         val longitude = reference?.let {
-            it.longitude + xMeters / (METERS_PER_DEGREE * cos(Math.toRadians(it.latitude)))
+            it.longitude + yMeters / (METERS_PER_DEGREE * cos(Math.toRadians(it.latitude)))
         }
         val confidence = if (mode == NativeNavigationMode.DEAD_RECKONING) {
             val duration = timestampSeconds - (outageStartSeconds ?: timestampSeconds)
