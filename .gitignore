@@ -1,0 +1,24 @@
+# Local dependencies and build output
+node_modules/
+dist/
+build/
+.gradle/
+mobile/.cxx/
+
+# Local datasets, recordings, maps, and model exports
+data/
+datasets/
+recordings/
+maps/cache/
+models/
+*.onnx
+*.tflite
+*.ckpt
+
+# Local credentials and IDE state
+.ofa/identity
+*.jks
+*.keystore
+.env
+.env.*
+.vscode/

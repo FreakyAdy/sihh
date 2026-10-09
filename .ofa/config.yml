@@ -1,0 +1,44 @@
+project:
+  name: sih-intelligent-dead-reckoning
+  type: multi-package
+zones:
+  ml:
+    paths:
+      - ml/
+    owner: null
+    description: IO-VNBD ingestion, preprocessing, training, evaluation, and model exports
+  engine:
+    paths:
+      - edge-engine/
+    owner: null
+    description: Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
+  mobile:
+    paths:
+      - mobile/
+    owner: null
+    description: Smartphone sensors, on-device inference, navigation UI, and offline maps
+  shared:
+    paths:
+      - shared/
+      - tests/
+      - docs/
+      - maps/
+      - .github/
+    owner: FreakyAdy
+    description: Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
+    claimed_at: '2026-10-09T21:12:23.573Z'
+rules:
+  require_all_owners: true
+  default_branch: main
+  protected_paths:
+    - shared/
+    - tests/
+    - docs/
+    - maps/
+    - .github/
+locks:
+  - zone: shared
+    owner: FreakyAdy
+    claimed_at: '2026-10-09T21:12:23.573Z'
+    expires_at: '2026-10-10T21:12:23.578Z'
+    ttl_hours: 24
