@@ -31,6 +31,7 @@ zones:
       - AGENTS.md
       - CLAUDE.md
       - GEMINI.md
+      - scripts/
     owner: FreakyAdy
     description: Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
     claimed_at: '2026-10-09T21:12:23.573Z'

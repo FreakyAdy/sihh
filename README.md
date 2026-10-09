@@ -54,3 +54,16 @@ benchmark calculations are in [shared/idr/metrics.py](shared/idr/metrics.py),
 and JSONL interchange is in [shared/idr/trace.py](shared/idr/trace.py).
 Cross-zone scenarios are documented in
 [docs/integration-testing.md](docs/integration-testing.md).
+
+## Screening release
+
+Run the final local release check before packaging:
+
+```powershell
+& 'C:/Program Files/Python314/python.exe' scripts/release_check.py
+```
+
+The release evidence and operator procedure are documented in
+[docs/release-checklist.md](docs/release-checklist.md),
+[docs/model-card.md](docs/model-card.md), and
+[docs/demo-runbook.md](docs/demo-runbook.md).
