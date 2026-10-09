@@ -5,8 +5,9 @@ vehicle positioning when GNSS is unavailable in tunnels, underpasses, parking
 structures, forests, and urban canyons.
 
 The project is designed for smartphone IMUs and external IMUs. It combines
-calibration, inertial propagation, learned speed correction, GNSS/INS
-recovery, non-holonomic constraints, and offline road-geometry matching.
+calibration, inertial propagation, speed and vibration baselines, adaptive
+GNSS/INS correction, non-holonomic constraints, and offline road-geometry
+matching.
 
 ## Problem
 
@@ -22,6 +23,7 @@ The system addresses this with:
 3. Streaming GNSS/INS state management with outage and recovery hysteresis.
 4. Non-holonomic forward propagation and bounded map corrections.
 5. Deterministic replay and benchmark certification before device deployment.
+6. Fail-closed evaluation and provenance rules for real datasets.
 
 ## Capabilities
 
@@ -33,9 +35,12 @@ The system addresses this with:
 - Forward-motion and yaw propagation.
 - Timestamp, finite-value, and sensor-gap validation.
 - External-IMU payload adapter.
-- Bounded map correction interface.
+- Active bounded fusion-correction seam for acceleration scale, yaw bias, and
+  GNSS gain.
 - Dependency-free `SegmentMapMatcher` with nearest-road projection,
   cross-track gating, heading gating, and confidence scoring.
+- `HmmMapMatcher` with candidate emissions and connected-road sequence
+  matching.
 
 ### Machine learning and data
 
@@ -44,7 +49,10 @@ The system addresses this with:
 - Timestamp and vibration quality flags.
 - GNSS-anchored speed baseline.
 - Ridge-regularized speed-correction model with JSON export and import.
+- Fixed-window temporal speed and vibration baseline with JSON export.
 - Matching Android `SpeedCorrectionModel` interface and JSON loader.
+- Explicit outage evaluation harness with median, p90, and worst-case drift
+  aggregation.
 
 ### Android application
 
@@ -70,7 +78,7 @@ Calibration and vehicle-frame adapter
           v
 GNSS/INS fusion and non-holonomic propagation
           |
-          +--> Offline road-segment map matcher
+          +--> Segment and HMM road-graph map matcher
           |
           v
 Navigation state, confidence, diagnostics, and UI
@@ -85,7 +93,7 @@ Repository layers:
 | `edge-engine/idr_engine` | Streaming fusion, constraints, map matching, adapters |
 | `mobile/idr_mobile` | Bounded Python runtime seam for mobile integration |
 | `mobile/app` | Native Android capture, calibration, UI, and runtime binding |
-| `rover` | Versioned physical-testbed telemetry contract and future Pi bridge |
+| `rover` | Versioned CRC-protected physical-testbed telemetry contract |
 | `tests/` | Cross-layer deterministic tests |
 | `docs/` | Architecture, model card, benchmark, demo, and release evidence |
 
@@ -152,6 +160,28 @@ IO-VNBD-trained artifact is supplied. This is deliberate: the repository does
 not claim trained phone performance without a dataset, model version, and
 measured evaluation report.
 
+The dependency-free temporal baseline is implemented in
+[temporal_model.py](ml/idr_ml/temporal_model.py). It consumes fixed windows
+of forward acceleration and yaw rate and emits speed plus vibration
+probability. It is a reproducible baseline, not a neural model or trained
+IO-VNBD result. The adaptive fusion seam is implemented in
+[fusion.py](edge-engine/idr_engine/fusion.py) through
+`FusionCorrectionModel`; `LinearFusionCorrection` is active when explicitly
+configured, while the default remains the classical no-op correction.
+
+For real data, use the [outage evaluation harness](docs/io-vnbd-evaluation.md):
+
+```powershell
+& 'C:/Program Files/Python314/python.exe' scripts/eval_outage.py `
+  --input C:/data/io-vnbd/session.csv `
+  --columns C:/data/io-vnbd/columns.json `
+  --outage-seconds 60 `
+  --output docs/evidence/io-vnbd-60s.json
+```
+
+The command requires an inspected explicit column mapping and truth
+coordinates. It refuses to produce a result when required evidence is absent.
+
 ## Demo flow
 
 1. Start the Android app and grant location permission.
@@ -186,17 +216,25 @@ Implemented:
 - ML/data baseline and exportable model schema.
 - GNSS/INS fusion and external-IMU adapter.
 - Concrete road-segment map matcher.
+- HMM connected-road map matcher.
+- Active adaptive fusion-correction seam.
+- Temporal speed/vibration baseline and parity tests.
+- Fail-closed IO-VNBD outage evaluator.
 - Python mobile runtime.
 - Android capture, staged calibration, and native runtime seam.
 - Benchmark report and trajectory evidence.
+- Rover telemetry protocol with CRC and version validation.
 
 Next validation milestones:
 
-1. Train and evaluate on a permitted IO-VNBD subset.
-2. Convert a measured model artifact into the Android JSON schema.
-3. Import an offline OSM extract into local road segments.
-4. Build and install the Android APK.
-5. Validate mounted orientations, GNSS outages, and recovery on hardware.
+1. Obtain and document a permitted IO-VNBD subset, schema, license, and checksums.
+2. Train and evaluate the temporal and adaptive fusion models on held-out sessions.
+3. Convert a measured model artifact into the Android JSON schema and measure latency.
+4. Import an offline OSM extract into local road segments and evaluate HMM matching.
+5. Build and install the Android APK, then validate mounted orientations,
+   GNSS outages, and recovery on hardware.
+6. Implement the rover ESP32 firmware and Raspberry Pi bridge, then run
+   marked-course experiments.
 
 The optional [rover testbed](rover/README.md) is a controlled validation
 platform, not a replacement for smartphone or road-speed evidence.
@@ -212,6 +250,7 @@ ONEFORALL defines ownership boundaries in
 | `engine` | Fusion, constraints, map matching, external-IMU adapters |
 | `mobile` | Android sensors, runtime, UI, and offline maps |
 | `shared` | Contracts, tests, documentation, CI, and releases |
+| `rover` | Physical-testbed protocol and future firmware/bridge integration |
 
 Before submitting changes:
 
