@@ -83,3 +83,9 @@ permission-aware diagnostic screen and `SensorCaptureController` for lifecycle
 safe accelerometer, gyroscope, and GNSS capture. Device-frame alignment and
 engine conversion remain an explicit adapter boundary; raw device-frame
 samples must not be presented as lane-level navigation success.
+
+`mobile/app/.../VehicleFrameAdapter.kt` is the current native conversion
+boundary. It requires explicit vehicle-heading/device-axis calibration and
+rejects adaptation before configuration. A future calibration workflow should
+derive these values from stationary and controlled-motion observations, then
+pass the resulting calibrated samples to the native fusion binding.

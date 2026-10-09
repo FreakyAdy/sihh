@@ -11,6 +11,7 @@ import org.sih.idr.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var sensorCapture: SensorCaptureController
+    private val vehicleFrameAdapter = VehicleFrameAdapter()
     private var sampleCount = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +28,12 @@ class MainActivity : AppCompatActivity() {
                         "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
                     } ?: "GNSS: waiting for fix"
                     binding.position.text = locationText
-                    binding.mode.text = "Mode: Sensor capture (engine adapter pending)"
+                    val mode = if (vehicleFrameAdapter.isConfigured()) {
+                        "Mode: Vehicle-frame adapter ready"
+                    } else {
+                        "Mode: Calibration required"
+                    }
+                    binding.mode.text = mode
                     binding.diagnostics.text = "Diagnostics: $sampleCount samples received"
                 }
 
