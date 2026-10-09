@@ -38,6 +38,9 @@ class LinearSpeedCorrectionModel(
             require(payload.optString("model_type") == "linear_speed_correction") {
                 "unsupported speed model type"
             }
+            require(payload.optString("version").isNotBlank()) {
+                "model version is required"
+            }
             val names = payload.getJSONArray("feature_names")
             val weights = payload.getJSONArray("weights")
             require(names.length() == weights.length()) {
@@ -45,6 +48,14 @@ class LinearSpeedCorrectionModel(
             }
             val values = (0 until names.length()).associate {
                 names.getString(it) to weights.getDouble(it)
+            }
+            require(values.keys == setOf(
+                "bias",
+                "forward_acceleration_mps2",
+                "yaw_rate_rps",
+                "absolute_acceleration_mps2",
+            )) {
+                "model feature names do not match the runtime contract"
             }
             return LinearSpeedCorrectionModel(
                 bias = values["bias"] ?: 0.0,

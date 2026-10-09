@@ -9,7 +9,7 @@ result is inferred from synthetic tests.
 
 | Area | Status | Current evidence | Main gap |
 | --- | --- | --- | --- |
-| Shared contracts and replay | Done | [`shared/idr`](../shared/idr) and 35 tests | None for the baseline contract |
+| Shared contracts and replay | Done | [`shared/idr`](../shared/idr) and 39 tests | None for the baseline contract |
 | Android capture and staged calibration | Partial | [`mobile/app`](../mobile/app) | APK build and physical-device validation |
 | Speed estimation | Partial | [`ml/idr_ml/model.py`](../ml/idr_ml/model.py) | Trained temporal model and measured phone inference |
 | GNSS/INS fusion | Partial | [`edge-engine/idr_engine/fusion.py`](../edge-engine/idr_engine/fusion.py) | Learned adaptive fusion correction and real-trace evaluation |

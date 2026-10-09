@@ -18,6 +18,11 @@ code, and an injectable model schema.
 - Approximately 200 Hz FOG or external-IMU measurement.
 - Rover firmware, bridge, truth course, or slip experiments.
 
+The repository now contains a dependency-free OSM XML/JSON conversion
+boundary and a deterministic engine throughput harness. These are preparation
+and replay tools; they do not constitute a real map extract, FOG measurement,
+or physical 200 Hz result.
+
 ## Interpretation rules
 
 - Synthetic zero drift is a contract-test result, not a field result.

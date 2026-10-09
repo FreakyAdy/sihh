@@ -41,6 +41,9 @@ The system addresses this with:
   cross-track gating, heading gating, and confidence scoring.
 - `HmmMapMatcher` with candidate emissions and connected-road sequence
   matching.
+- JSON/OSM XML road-way import into local metre-frame segments through
+  `load_road_segments`.
+- Deterministic throughput reporting for phone-rate and edge-rate replay.
 
 ### Machine learning and data
 
@@ -142,7 +145,7 @@ Run release certification:
 & 'C:/Program Files/Python314/python.exe' scripts/release_check.py
 ```
 
-Expected current result: 35 tests pass and the synthetic release benchmark
+Expected current result: 39 tests pass and the synthetic release benchmark
 passes the drift and 10 Hz update-rate thresholds.
 
 ## Model workflow

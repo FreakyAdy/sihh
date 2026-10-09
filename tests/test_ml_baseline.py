@@ -107,6 +107,17 @@ class MlBaselineTests(unittest.TestCase):
         restored = SpeedCorrectionModel.load(stream)
         self.assertAlmostEqual(restored.predict(frames[4]), model.predict(frames[4]), places=8)
 
+    def test_speed_model_rejects_unknown_feature_contract(self) -> None:
+        with self.assertRaises(ValueError):
+            SpeedCorrectionModel.from_dict(
+                {
+                    "model_type": "linear_speed_correction",
+                    "version": "test",
+                    "feature_names": ["bias"],
+                    "weights": [1.0],
+                }
+            )
+
     def test_temporal_model_predicts_and_round_trips_schema(self) -> None:
         frames = [
             SensorFrame(

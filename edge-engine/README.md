@@ -23,7 +23,8 @@ along the current vehicle heading and does not introduce lateral or vertical
 motion. A `MapMatcher` may provide a bounded local-road correction during an
 outage. `NoOpMapMatcher` is the explicit fallback when offline map data is not
 available. `SegmentMapMatcher` is the included deterministic local-map
-implementation. An offline OSM importer can convert road way geometry into
+implementation. `load_road_segments` accepts a documented JSON way format or
+a small OSM XML extract and converts road geometry into local metre-frame
 `RoadSegment` values without changing the fusion state machine. Candidates are
 projected onto the nearest segment and rejected when cross-track distance or
 heading error exceeds configured limits.

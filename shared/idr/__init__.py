@@ -6,6 +6,7 @@ from .replay import DeadReckoningReplay
 from .scenarios import ScenarioResult, ScenarioStatus, run_scenario
 from .synthetic import straight_line_trace
 from .trace import frame_from_dict, frame_to_dict, read_jsonl, write_jsonl
+from .throughput import ThroughputReport, measure_throughput
 
 __all__ = [
     "DeadReckoningReplay",
@@ -23,4 +24,6 @@ __all__ = [
     "write_jsonl",
     "run_scenario",
     "certify_replay",
+    "ThroughputReport",
+    "measure_throughput",
 ]

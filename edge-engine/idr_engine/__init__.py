@@ -17,6 +17,7 @@ from .constraints import (
     SegmentMapMatcher,
     HmmMapMatcher,
 )
+from .map_io import load_road_segments
 
 __all__ = [
     "FusionConfig",
@@ -32,4 +33,5 @@ __all__ = [
     "SegmentMapMatcher",
     "HmmMapMatcher",
     "frame_from_external",
+    "load_road_segments",
 ]

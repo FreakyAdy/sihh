@@ -60,9 +60,20 @@ class SpeedCorrectionModel:
     def from_dict(cls, payload: dict[str, object]) -> SpeedCorrectionModel:
         if payload.get("model_type") != "linear_speed_correction":
             raise ValueError("unsupported model_type")
-        names = tuple(str(name) for name in payload["feature_names"])
-        weights = tuple(float(weight) for weight in payload["weights"])
-        return cls(weights=weights, feature_names=names, version=str(payload["version"]))
+        raw_names = payload.get("feature_names")
+        raw_weights = payload.get("weights")
+        version = payload.get("version")
+        if not isinstance(raw_names, list) or not isinstance(raw_weights, list):
+            raise ValueError("model feature_names and weights must be arrays")
+        if not isinstance(version, str) or not version.strip():
+            raise ValueError("model version must be a non-empty string")
+        names = tuple(str(name) for name in raw_names)
+        weights = tuple(float(weight) for weight in raw_weights)
+        if names != FEATURE_NAMES:
+            raise ValueError("model feature_names do not match the runtime contract")
+        if not all(weight == weight and abs(weight) != float("inf") for weight in weights):
+            raise ValueError("model weights must be finite")
+        return cls(weights=weights, feature_names=names, version=version)
 
     def save(self, destination: str | Path | TextIO) -> None:
         stream, should_close = _open(destination, "w")

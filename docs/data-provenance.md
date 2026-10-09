@@ -33,3 +33,22 @@ from unavailable files.
 
 The current [`io_vnbd.py`](../ml/idr_ml/io_vnbd.py) adapter requires an
 explicit mapping and fails rather than guessing field names.
+
+## Generated evidence contract
+
+Every real-data report should be accompanied by a JSON metadata object with:
+
+```json
+{
+  "dataset": {"name": "IO-VNBD", "release": "REQUIRED", "sha256": "REQUIRED"},
+  "mapping": "columns.json",
+  "sessions": {"train": [], "evaluation": []},
+  "model": {"type": "linear_speed_correction", "version": "REQUIRED"},
+  "evaluation": {"outage_seconds": 60, "seed": "REQUIRED"},
+  "map": {"source": "REQUIRED", "version": "REQUIRED"}
+}
+```
+
+The repository may contain this metadata and derived plots, but not the raw
+dataset or restricted map extract. Missing required values must remain
+`REQUIRED`; they must not be replaced with guessed provenance.
