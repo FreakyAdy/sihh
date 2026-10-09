@@ -51,3 +51,22 @@ The runtime uses the same `predict` implementation as the training artifact
 loader, and the test suite verifies JSON round-trip parity. This transparent
 model is the first deployable baseline; a compact TFLite/ONNX temporal model
 can replace it later while preserving the shared input contract.
+
+## Temporal speed and vibration baseline
+
+`idr_ml.temporal_model` adds a fixed-window statistical model that consumes
+forward acceleration and yaw-rate history. It emits both a non-negative speed
+estimate and a vibration probability. The implementation is dependency-free
+and exports explicit feature names, window length, weights, and version.
+
+```python
+from idr_ml.temporal_model import train_temporal_speed_model
+
+model = train_temporal_speed_model(session.frames, window_size=11)
+model.save("models/temporal-speed-vibration.json")
+```
+
+This is a deterministic temporal baseline, not a neural network or a claim of
+trained IO-VNBD performance. It must be trained on complete permitted
+sessions, evaluated on held-out sessions, and converted to the Android
+runtime schema before it is presented as the production phone model.

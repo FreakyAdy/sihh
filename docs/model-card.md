@@ -26,6 +26,12 @@ names aligned. The current shell uses neutral coefficients until a permitted
 IO-VNBD-trained artifact is supplied; no untrained artifact is presented as
 measured performance.
 
+The repository also includes a dependency-free fixed-window temporal baseline
+in `ml/idr_ml/temporal_model.py`. It emits speed and vibration probability and
+has JSON round-trip parity tests. It is a research baseline only: no real
+dataset training, neural export, Android latency measurement, or held-out
+session result is claimed yet.
+
 ## Limitations
 
 - The baseline does not model full 3D orientation, bias random walk, wheel

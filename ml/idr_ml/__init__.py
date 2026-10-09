@@ -5,6 +5,12 @@ from .dataset import SessionTrace, load_session, split_sessions
 from .io_vnbd import ColumnMap, read_csv_sessions
 from .model import SpeedCorrectionModel, extract_features, train_speed_model
 from .quality import QualityFlag, assess_quality, smooth_acceleration
+from .temporal_model import (
+    TemporalPrediction,
+    TemporalSpeedModel,
+    extract_window_features,
+    train_temporal_speed_model,
+)
 
 __all__ = [
     "BaselineOutput",
@@ -20,4 +26,8 @@ __all__ = [
     "split_sessions",
     "extract_features",
     "train_speed_model",
+    "TemporalPrediction",
+    "TemporalSpeedModel",
+    "extract_window_features",
+    "train_temporal_speed_model",
 ]

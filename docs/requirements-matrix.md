@@ -10,7 +10,7 @@ Statuses are evidence-based:
 | Requirement | Status | Evidence | Remaining evidence |
 | --- | --- | --- | --- |
 | In-vehicle pitch, roll, and yaw calibration | Partial | [`VehicleCalibration.kt`](../mobile/app/src/main/java/org/sih/idr/VehicleCalibration.kt) | Known-orientation tests, remount detection, phone validation |
-| AI speed and vibration filtering | Partial | [`model.py`](../ml/idr_ml/model.py), [`quality.py`](../ml/idr_ml/quality.py) | Trained temporal model, vibration classifier, held-out sessions |
+| AI speed and vibration filtering | Partial | [`model.py`](../ml/idr_ml/model.py), [`temporal_model.py`](../ml/idr_ml/temporal_model.py), [`quality.py`](../ml/idr_ml/quality.py) | IO-VNBD-trained temporal model, held-out sessions, Android artifact |
 | NHC and map matching | Partial | [`fusion.py`](../edge-engine/idr_engine/fusion.py), [`constraints.py`](../edge-engine/idr_engine/constraints.py) | OSM importer, HMM graph matching, real-trace comparison |
 | AI-based GNSS/INS fusion | Partial | [`fusion.py`](../edge-engine/idr_engine/fusion.py) | Learned adaptive fusion correction |
 | Seamless outage and recovery | Partial | [`fusion.py`](../edge-engine/idr_engine/fusion.py), [`SensorCaptureController.kt`](../mobile/app/src/main/java/org/sih/idr/SensorCaptureController.kt) | Device latency and recovery-jump measurements |

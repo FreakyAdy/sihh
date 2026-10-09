@@ -12,6 +12,7 @@ from idr_ml.dataset import SessionTrace, split_sessions
 from idr_ml.io_vnbd import ColumnMap, read_csv_sessions
 from idr_ml.model import SpeedCorrectionModel, train_speed_model
 from idr_ml.quality import QualityFlag, assess_quality
+from idr_ml.temporal_model import TemporalSpeedModel, train_temporal_speed_model
 
 
 class MlBaselineTests(unittest.TestCase):
@@ -105,6 +106,28 @@ class MlBaselineTests(unittest.TestCase):
         stream.seek(0)
         restored = SpeedCorrectionModel.load(stream)
         self.assertAlmostEqual(restored.predict(frames[4]), model.predict(frames[4]), places=8)
+
+    def test_temporal_model_predicts_and_round_trips_schema(self) -> None:
+        frames = [
+            SensorFrame(
+                ImuSample(float(index), 0.2 * index, 0.01 * index),
+                GnssFix(float(index), 28.0, 77.0, speed_mps=2.0 + 0.2 * index),
+            )
+            for index in range(11)
+        ]
+        model = train_temporal_speed_model(frames, window_size=5)
+        prediction = model.predict(frames[3:8])
+        self.assertGreaterEqual(prediction.speed_mps, 0.0)
+        self.assertGreaterEqual(prediction.vibration_probability, 0.0)
+        self.assertLessEqual(prediction.vibration_probability, 1.0)
+        restored = TemporalSpeedModel.from_dict(model.to_dict())
+        restored_prediction = restored.predict(frames[3:8])
+        self.assertAlmostEqual(prediction.speed_mps, restored_prediction.speed_mps, places=8)
+        self.assertAlmostEqual(
+            prediction.vibration_probability,
+            restored_prediction.vibration_probability,
+            places=8,
+        )
 
 
 if __name__ == "__main__":
