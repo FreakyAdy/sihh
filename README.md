@@ -108,6 +108,9 @@ Evidence:
 - [Trajectory plot](docs/evidence/synthetic-1km-trajectory.svg)
 - [Benchmark methodology](docs/benchmarking.md)
 - [Model card](docs/model-card.md)
+- [Requirements matrix](docs/requirements-matrix.md)
+- [Limitations](docs/limitations.md)
+- [Data provenance record](docs/data-provenance.md)
 
 Generate the evidence again:
 
