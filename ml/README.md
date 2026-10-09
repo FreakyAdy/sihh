@@ -32,4 +32,22 @@ leakage between training and evaluation.
 
 The current baseline includes robust median acceleration smoothing, shock/gap
 quality flags, GNSS-anchored speed estimation, and deterministic splits. It is
-not the final learned model.
+not the final neural model.
+
+## Exported correction model
+
+`idr_ml.model.train_speed_model` fits a small ridge-regularized linear speed
+correction model using GNSS speed labels. The artifact is JSON with explicit
+feature names, weights, version, and model type:
+
+```python
+from idr_ml.model import train_speed_model
+
+model = train_speed_model(session.frames)
+model.save("models/speed-correction.json")
+```
+
+The runtime uses the same `predict` implementation as the training artifact
+loader, and the test suite verifies JSON round-trip parity. This transparent
+model is the first deployable baseline; a compact TFLite/ONNX temporal model
+can replace it later while preserving the shared input contract.

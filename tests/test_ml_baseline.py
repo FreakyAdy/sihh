@@ -10,6 +10,7 @@ from idr.synthetic import straight_line_trace
 from idr_ml.baseline import estimate_forward_speed
 from idr_ml.dataset import SessionTrace, split_sessions
 from idr_ml.io_vnbd import ColumnMap, read_csv_sessions
+from idr_ml.model import SpeedCorrectionModel, train_speed_model
 from idr_ml.quality import QualityFlag, assess_quality
 
 
@@ -75,6 +76,35 @@ class MlBaselineTests(unittest.TestCase):
         self.assertEqual([session.session_id for session in sessions], ["a", "b"])
         self.assertEqual(len(sessions[0].frames), 2)
         self.assertIsNone(sessions[0].frames[1].gnss)
+
+    def test_speed_model_trains_and_round_trips_export(self) -> None:
+        from io import StringIO
+
+        frames = [
+            SensorFrame(
+                ImuSample(
+                    float(index),
+                    (-0.5, -0.2, 0.5, 1.0, 1.5, 2.0)[index],
+                    (0.0, 0.2, -0.4, 0.7, -0.1, 0.5)[index],
+                ),
+                GnssFix(
+                    float(index),
+                    28.0,
+                    77.0,
+                    speed_mps=2.0
+                    + 3.0 * (-0.5, -0.2, 0.5, 1.0, 1.5, 2.0)[index]
+                    + 0.5 * (0.0, 0.2, -0.4, 0.7, -0.1, 0.5)[index],
+                ),
+            )
+            for index in range(6)
+        ]
+        model = train_speed_model(frames)
+        self.assertAlmostEqual(model.predict(frames[2]), 3.3, places=4)
+        stream = StringIO()
+        model.save(stream)
+        stream.seek(0)
+        restored = SpeedCorrectionModel.load(stream)
+        self.assertAlmostEqual(restored.predict(frames[4]), model.predict(frames[4]), places=8)
 
 
 if __name__ == "__main__":
