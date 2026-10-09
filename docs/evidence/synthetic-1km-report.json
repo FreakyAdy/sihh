@@ -1,0 +1,18 @@
+{
+  "name": "synthetic-1km-60kmph-outage",
+  "metrics": {
+    "sample_count": 601,
+    "duration_s": 60.0,
+    "update_rate_hz": 10.0,
+    "max_position_error_m": 9.322320693172514e-12,
+    "travelled_distance_m": 1000.0000000000001,
+    "drift_percent": 9.322320693172514e-13,
+    "outage_transition_latency_s": 0.0,
+    "recovery_timestamp_s": 50.1,
+    "meets_drift_target": true,
+    "meets_mobile_rate_target": true
+  },
+  "drift_target_percent": 10.0,
+  "mobile_update_target_hz": 10.0,
+  "passed": true
+}

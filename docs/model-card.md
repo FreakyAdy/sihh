@@ -20,6 +20,12 @@ temporal model is trained on approved IO-VNBD and phone recordings.
 - Export metadata: model type, version, feature names, and weights.
 - Runtime parity: JSON save/load prediction parity is covered by tests.
 
+The Android runtime accepts this same schema through
+`LinearSpeedCorrectionModel.fromJson`, keeping export and on-device feature
+names aligned. The current shell uses neutral coefficients until a permitted
+IO-VNBD-trained artifact is supplied; no untrained artifact is presented as
+measured performance.
+
 ## Limitations
 
 - The baseline does not model full 3D orientation, bias random walk, wheel

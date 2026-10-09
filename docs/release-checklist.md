@@ -12,4 +12,6 @@
       or unreviewed model binaries are committed.
 - [ ] Android package and edge package have version metadata and checksums.
 - [ ] Deterministic replay fallback has been rehearsed.
+- [ ] `docs/evidence/synthetic-1km-report.json` and its trajectory plot have
+      been regenerated from the current code.
 - [ ] Unmet real-world targets and known failure modes are disclosed.

@@ -21,6 +21,8 @@ REQUIRED_PATHS = (
     ROOT / "docs" / "benchmarking.md",
     ROOT / "docs" / "demo-runbook.md",
     ROOT / "docs" / "model-card.md",
+    ROOT / "docs" / "evidence" / "synthetic-1km-report.json",
+    ROOT / "docs" / "evidence" / "synthetic-1km-trajectory.svg",
     ROOT / "shared" / "idr",
     ROOT / "edge-engine" / "idr_engine",
     ROOT / "ml" / "idr_ml",

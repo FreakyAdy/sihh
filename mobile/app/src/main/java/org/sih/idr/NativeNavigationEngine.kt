@@ -1,6 +1,7 @@
 package org.sih.idr
 
 import android.location.Location
+import org.json.JSONObject
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
@@ -31,6 +32,29 @@ class LinearSpeedCorrectionModel(
     private val yawRateWeight: Double = 0.0,
     private val absoluteAccelerationWeight: Double = 0.0,
 ) : SpeedCorrectionModel {
+    companion object {
+        fun fromJson(json: String): LinearSpeedCorrectionModel {
+            val payload = JSONObject(json)
+            require(payload.optString("model_type") == "linear_speed_correction") {
+                "unsupported speed model type"
+            }
+            val names = payload.getJSONArray("feature_names")
+            val weights = payload.getJSONArray("weights")
+            require(names.length() == weights.length()) {
+                "feature and weight lengths must match"
+            }
+            val values = (0 until names.length()).associate {
+                names.getString(it) to weights.getDouble(it)
+            }
+            return LinearSpeedCorrectionModel(
+                bias = values["bias"] ?: 0.0,
+                accelerationWeight = values["forward_acceleration_mps2"] ?: 0.0,
+                yawRateWeight = values["yaw_rate_rps"] ?: 0.0,
+                absoluteAccelerationWeight = values["absolute_acceleration_mps2"] ?: 0.0,
+            )
+        }
+    }
+
     override fun predictSpeed(forwardAccelerationMps2: Double, yawRateRps: Double): Double =
         max(
             0.0,
