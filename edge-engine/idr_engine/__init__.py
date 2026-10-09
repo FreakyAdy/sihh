@@ -2,7 +2,13 @@
 
 from .fusion import FusionConfig, FusionEngine
 from .adapters import frame_from_external
-from .constraints import MapConstraint, MapMatcher, NoOpMapMatcher
+from .constraints import (
+    MapConstraint,
+    MapMatcher,
+    NoOpMapMatcher,
+    RoadSegment,
+    SegmentMapMatcher,
+)
 
 __all__ = [
     "FusionConfig",
@@ -10,5 +16,7 @@ __all__ = [
     "MapConstraint",
     "MapMatcher",
     "NoOpMapMatcher",
+    "RoadSegment",
+    "SegmentMapMatcher",
     "frame_from_external",
 ]

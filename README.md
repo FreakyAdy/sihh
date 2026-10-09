@@ -65,6 +65,12 @@ the default neutral coefficients are intentionally not presented as trained
 phone performance. A production screening build must load coefficients
 trained from the permitted IO-VNBD subset and record its model version.
 
+The edge engine also contains a working, dependency-free
+[`SegmentMapMatcher`](edge-engine/idr_engine/constraints.py), with nearest
+segment projection, cross-track gating, heading gating, and confidence
+scoring. This is the concrete map-matching primitive used by the fusion
+correction seam; it is not merely a placeholder interface.
+
 The first vertical slice must replay a permitted IO-VNBD subset, produce a GNSS-aided/dead-reckoning trajectory, and report drift percentage, update rate, outage transition latency, and recovery behavior.
 
 ## Run the replay baseline

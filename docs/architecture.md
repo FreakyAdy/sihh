@@ -95,6 +95,12 @@ stationary gravity stability followed by forward motion with a GNSS bearing
 and speed. Its result contains pitch, roll, heading, and the selected device
 forward axis.
 
+The edge layer includes `SegmentMapMatcher`, a deterministic offline-map
+adapter that projects the estimate onto local road segments and rejects
+matches outside configurable cross-track and heading gates. This is a working
+map-matching primitive rather than only a protocol; OSM import remains a
+separate data-preparation step.
+
 `NativeNavigationEngine.kt` is the current Kotlin runtime seam. It consumes
 only `VehicleImuSample`, initializes from GNSS, propagates position during a
 confirmed outage, decays confidence, and requires consecutive GNSS fixes for

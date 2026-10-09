@@ -7,7 +7,14 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "edge-engine"))
 
 from idr.models import GnssFix, ImuSample, NavigationMode, SensorFrame
 from idr.synthetic import METERS_PER_DEGREE
-from idr_engine import FusionConfig, FusionEngine, MapConstraint, frame_from_external
+from idr_engine import (
+    FusionConfig,
+    FusionEngine,
+    MapConstraint,
+    RoadSegment,
+    SegmentMapMatcher,
+    frame_from_external,
+)
 
 
 class FusionTests(unittest.TestCase):
@@ -69,6 +76,26 @@ class FusionTests(unittest.TestCase):
         )
         self.assertEqual(frame.imu.timestamp_s, 1.0)
         self.assertEqual(frame.gnss.speed_mps, 4.0)
+
+    def test_segment_matcher_projects_to_heading_compatible_road(self) -> None:
+        matcher = SegmentMapMatcher(
+            [RoadSegment(0.0, 0.0, 100.0, 0.0, road_id="east-west")],
+            max_distance_m=10.0,
+        )
+        match = matcher.match(40.0, 6.0, 0.0)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertAlmostEqual(match.x_m, 40.0)
+        self.assertAlmostEqual(match.y_m, 0.0)
+        self.assertGreater(match.confidence, 0.3)
+
+    def test_segment_matcher_rejects_wrong_heading(self) -> None:
+        matcher = SegmentMapMatcher(
+            [RoadSegment(0.0, 0.0, 100.0, 0.0)],
+            max_distance_m=10.0,
+            max_heading_error_rad=0.2,
+        )
+        self.assertIsNone(matcher.match(40.0, 2.0, 1.57))
 
 
 if __name__ == "__main__":
