@@ -4,6 +4,15 @@ from dataclasses import dataclass
 from math import atan2, cos, sin
 from typing import Protocol, Sequence
 
+# Coordinate frame convention used throughout this module and by FusionEngine:
+#   x = east  (metres)
+#   y = north (metres)
+#   heading_rad = 0 → east, increasing counter-clockwise (standard math angle)
+# OSM segments and any imported map data must be reprojected to this frame
+# using the same GNSS origin as the FusionEngine before being passed here.
+COORDINATE_FRAME_NOTE = "local ENU: x=east, y=north, heading=math angle (0=east, CCW)"
+
+
 
 @dataclass(frozen=True)
 class MapConstraint:
@@ -217,6 +226,60 @@ class HmmMapMatcher(SegmentMapMatcher):
 
     def _transition_penalty(self, previous_index: int, index: int) -> float:
         return 0.0 if previous_index == index else 1.0
+
+
+class StreamingHmmMatcher:
+    """Adapts :class:`HmmMapMatcher` for per-sample streaming calls.
+
+    ``HmmMapMatcher.match_sequence()`` operates on a full observation sequence,
+    but ``FusionEngine._apply_map_constraint()`` calls the ``MapMatcher``
+    protocol's :meth:`match` once per sample.  This class bridges the gap by
+    maintaining a sliding observation window and calling ``match_sequence()``
+    on each new sample, returning only the last element of the result.
+
+    The map coordinate frame must be the same local ENU frame used by the
+    fusion engine (x=east, y=north).  See ``COORDINATE_FRAME_NOTE``.
+
+    Parameters
+    ----------
+    hmm:
+        A configured :class:`HmmMapMatcher` with road segments and connectivity.
+    window:
+        Maximum number of recent observations kept in the sliding buffer.
+        Larger windows produce smoother sequence matching but increase latency.
+    min_window:
+        Minimum buffer length before returning a result.  Below this threshold
+        ``match()`` returns ``None`` to avoid spurious early matches.
+    """
+
+    def __init__(
+        self,
+        hmm: HmmMapMatcher,
+        window: int = 20,
+        min_window: int = 3,
+    ) -> None:
+        if window < 1:
+            raise ValueError("window must be at least 1")
+        if min_window < 1 or min_window > window:
+            raise ValueError("min_window must be in [1, window]")
+        self._hmm = hmm
+        self._window = window
+        self._min_window = min_window
+        self._buffer: list[tuple[float, float, float]] = []
+
+    def match(self, x_m: float, y_m: float, heading_rad: float) -> MapConstraint | None:
+        """Accept one sample and return a map constraint, or ``None``."""
+        self._buffer.append((x_m, y_m, heading_rad))
+        if len(self._buffer) > self._window:
+            self._buffer.pop(0)
+        if len(self._buffer) < self._min_window:
+            return None
+        try:
+            candidates = self._hmm.match_sequence(self._buffer)
+        except Exception:
+            # Defensive: never let the matcher crash the navigation loop.
+            return None
+        return candidates[-1] if candidates else None
 
 
 def blend_map_constraint(

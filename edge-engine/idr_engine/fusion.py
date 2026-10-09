@@ -109,6 +109,10 @@ class FusionEngine:
         self._y_m = 0.0
         self._speed_mps = initial_fix.speed_mps if initial_fix and initial_fix.speed_mps else 0.0
         self._heading_rad = 0.0
+        self._heading_initialized = False
+        # Stores (x_m, y_m) from successive GNSS fixes for bearing inference
+        # when the receiver does not supply a course-over-ground field.
+        self._gnss_history: list[tuple[float, float]] = []
         self._last_timestamp_s: Optional[float] = None
         self._outage_started_s: Optional[float] = None
         self._mode = NavigationMode.INITIALIZING
@@ -188,6 +192,27 @@ class FusionEngine:
             self._apply_gnss(fix, projected_x, projected_y, correction.gnss_gain)
             self._mode = NavigationMode.GNSS_AIDED
             self._outage_started_s = None
+
+        # --- Heading initialization from GNSS ---
+        # Priority 1: receiver-supplied course-over-ground (available instantly).
+        # Priority 2: inferred from two fixes at least 5 m apart (more robust).
+        if not self._heading_initialized:
+            if fix.bearing_deg is not None:
+                # Convert from clockwise-from-north (compass) to east/north math angle
+                # east/north: angle 0 = east (+x), 90° = north (+y)
+                # compass:    bearing 0 = north, 90° = east
+                self._heading_rad = math.radians(90.0 - fix.bearing_deg)
+                self._heading_initialized = True
+            else:
+                self._gnss_history.append((projected_x, projected_y))
+                if len(self._gnss_history) >= 2:
+                    dx = self._gnss_history[-1][0] - self._gnss_history[-2][0]
+                    dy = self._gnss_history[-1][1] - self._gnss_history[-2][1]
+                    separation = math.hypot(dx, dy)
+                    if separation >= 5.0:  # minimum distance for a reliable bearing
+                        self._heading_rad = math.atan2(dy, dx)
+                        self._heading_initialized = True
+
         confidence = self._gnss_confidence(fix)
         outage_duration = 0.0 if self._outage_started_s is None else timestamp_s - self._outage_started_s
         return self._state(timestamp_s, confidence, outage_duration)

@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "IO-VNBD ColumnMap template.  Edit column names to match your local CSV.",
+    "Run: python -c \"import csv; r=csv.DictReader(open('your.csv')); print(r.fieldnames)\"",
+    "to inspect the actual header before filling in values below.",
+    "Set optional fields to null if that column does not exist in your CSV.",
+    "DO NOT commit raw data files — only commit this mapping template."
+  ],
+  "timestamp": "time_s",
+  "forward_acceleration": "accel_forward_mps2",
+  "yaw_rate": "gyro_yaw_rps",
+  "latitude": "gnss_lat_deg",
+  "longitude": "gnss_lon_deg",
+  "speed": "gnss_speed_mps",
+  "horizontal_accuracy": null,
+  "truth_x": null,
+  "truth_y": null,
+  "session": "session_id"
+}

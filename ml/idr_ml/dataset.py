@@ -59,5 +59,27 @@ def split_sessions(
     return train, validation, test
 
 
+def session_train_test_split(
+    sessions: Sequence[SessionTrace],
+    test_fraction: float = 0.2,
+    seed: int = 42,
+) -> tuple[list[SessionTrace], list[SessionTrace]]:
+    """Two-way session split: train / test.
+
+    Wraps ``split_sessions`` with no validation set.  The same *seed* always
+    produces the same partition so results are reproducible across runs.
+
+    Never splits on adjacent windows within a session — the entire session
+    moves to one side of the split.
+    """
+    train, _, test = split_sessions(
+        sessions,
+        validation_fraction=0.0,
+        test_fraction=test_fraction,
+        seed=seed,
+    )
+    return train, test
+
+
 def load_sessions(paths: Iterable[str | Path]) -> list[SessionTrace]:
     return [load_session(path) for path in paths]

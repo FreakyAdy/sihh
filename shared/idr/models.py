@@ -42,6 +42,11 @@ class GnssFix:
     longitude_deg: float
     speed_mps: Optional[float] = None
     horizontal_accuracy_m: Optional[float] = None
+    bearing_deg: Optional[float] = None
+    """Course over ground in degrees [0, 360).  Positive clockwise from north.
+    When provided by the GNSS receiver, this is used to initialize the
+    estimator heading directly without waiting for two separated fixes.
+    """
 
     def __post_init__(self) -> None:
         _require_finite("timestamp_s", self.timestamp_s)
@@ -59,6 +64,10 @@ class GnssFix:
             _require_finite("horizontal_accuracy_m", self.horizontal_accuracy_m)
             if self.horizontal_accuracy_m < 0.0:
                 raise ValueError("horizontal_accuracy_m must be non-negative")
+        if self.bearing_deg is not None:
+            _require_finite("bearing_deg", self.bearing_deg)
+            if not 0.0 <= self.bearing_deg < 360.0:
+                raise ValueError("bearing_deg must be in [0, 360)")
 
 
 @dataclass(frozen=True)

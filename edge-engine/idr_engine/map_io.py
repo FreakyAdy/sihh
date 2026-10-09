@@ -13,7 +13,27 @@ def load_road_segments(source: str | Path | TextIO) -> tuple[RoadSegment, ...]:
 
     JSON uses ``{"ways": [{"id": "...", "points": [[x, y], ...]}]}``.
     OSM XML way coordinates are converted from lon/lat into a local
-    equirectangular metre frame using the first node as the origin.
+    equirectangular metre frame using the **first node encountered** as the
+    local origin.
+
+    Coordinate frame
+    ----------------
+    All returned segments are in local ENU metres:
+      - x = east  (positive → east of origin)
+      - y = north (positive → north of origin)
+
+    **Important:** the FusionEngine uses the same ENU convention, but its
+    local origin is the **first GNSS fix** it receives.  If you load a map
+    with a different geographic origin, you must reproject the segments to
+    the engine's origin before passing them to the matcher.  The simplest way
+    is to call this function with an OSM extract that includes the vehicle's
+    starting position so both origins are close.
+
+    OSM way filtering
+    -----------------
+    All OSM ways are imported regardless of the ``highway`` tag.  If you only
+    want drivable roads, pre-filter the OSM XML to remove pedestrian, cycleway,
+    and footway tags before importing.
     """
     stream, close = _open(source)
     try:

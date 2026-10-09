@@ -16,6 +16,7 @@ from .constraints import (
     RoadSegment,
     SegmentMapMatcher,
     HmmMapMatcher,
+    StreamingHmmMatcher,
 )
 from .map_io import load_road_segments
 
@@ -32,6 +33,7 @@ __all__ = [
     "RoadSegment",
     "SegmentMapMatcher",
     "HmmMapMatcher",
+    "StreamingHmmMatcher",
     "frame_from_external",
     "load_road_segments",
 ]

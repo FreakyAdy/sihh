@@ -28,7 +28,10 @@ class OutageEvaluationTests(unittest.TestCase):
         self.assertIsNotNone(masked[3].gnss)
 
     def test_aggregate_reports_median_p90_and_worst(self) -> None:
-        reports = [{"drift_percent": value} for value in (1.0, 2.0, 10.0, 4.0)]
+        reports = [
+            {"drift_percent": v, "max_position_error_m": v * 10.0}
+            for v in (1.0, 2.0, 10.0, 4.0)
+        ]
         aggregate = _aggregate(reports)
         self.assertEqual(aggregate["median_drift_percent"], 3.0)
         self.assertEqual(aggregate["p90_drift_percent"], 10.0)

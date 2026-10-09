@@ -10,17 +10,32 @@ from unavailable files.
 | --- | --- |
 | Dataset name | IO-VNBD |
 | Subset or release | `REQUIRED` |
-| Source URL or transfer record | `REQUIRED` |
-| License and permitted use | `REQUIRED` |
+| Source URL or transfer record | https://github.com/onyekpeu/IO-VNBD |
+| License and permitted use | `REQUIRED — confirm from dataset README before evaluation` |
 | Local cache path | `REQUIRED; never commit the dataset` |
-| File checksums | `REQUIRED` |
-| Verified columns | `REQUIRED after inspecting files` |
+| File checksums (SHA-256) | `REQUIRED` |
+| Verified column names | `REQUIRED after inspecting CSV header` |
 | Session IDs used | `REQUIRED` |
-| Train/evaluation split | Complete sessions only |
-| Random seed | `REQUIRED` |
+| Train/evaluation split | Complete sessions only (seed=42 by default) |
+| Random seed | 42 (configurable via `--seed` in `train_io_vnbd.py`) |
 | Evaluation script commit | `REQUIRED` |
 | Model artifact version | `REQUIRED` |
 | Map source and version | `REQUIRED if map matching is evaluated` |
+
+## Column map
+
+After downloading IO-VNBD, inspect the CSV header with:
+
+```powershell
+& 'C:/Program Files/Python314/python.exe' -c "
+import csv
+r = csv.DictReader(open('C:/data/io-vnbd/session.csv'))
+print(r.fieldnames)
+"
+```
+
+Then update `ml/idr_ml/io_vnbd_columns_template.json` with the real column
+names and save a copy beside each evaluation report.
 
 ## Integrity rules
 
@@ -30,21 +45,41 @@ from unavailable files.
 4. Store checksums and configuration beside generated evidence.
 5. Do not commit source data, private recordings, map extracts, credentials,
    or oversized model binaries.
+6. **Drift measurement** must use the outage-only window metric (Phase 1 fix in
+   `scripts/eval_outage.py` and `shared/idr/metrics.py`).  Never use full-session
+   error as a proxy for GNSS-denied performance.
 
-The current [`io_vnbd.py`](../ml/idr_ml/io_vnbd.py) adapter requires an
-explicit mapping and fails rather than guessing field names.
+The current [`io_vnbd.py`](../ml/idr_ml/io_vnbd.py) adapter validates all
+configured columns and rejects non-monotonic timestamps.
+
+## Training and evaluation workflow
+
+```powershell
+# Step 1: Inspect CSV header and update column map
+# Step 2: Run training + evaluation pipeline
+& 'C:/Program Files/Python314/python.exe' scripts/train_io_vnbd.py `
+    --input      C:/data/io-vnbd/session.csv `
+    --columns    ml/idr_ml/io_vnbd_columns_template.json `
+    --outage-seconds 60 `
+    --output-dir docs/evidence/io-vnbd/
+
+# Outputs committed to repository:
+#   docs/evidence/io-vnbd/model.json
+#   docs/evidence/io-vnbd/evaluation-report.json
+#   docs/evidence/io-vnbd/trajectory-<session_id>.svg
+```
 
 ## Generated evidence contract
 
-Every real-data report should be accompanied by a JSON metadata object with:
+Every real-data report must be accompanied by a JSON metadata object with:
 
 ```json
 {
   "dataset": {"name": "IO-VNBD", "release": "REQUIRED", "sha256": "REQUIRED"},
-  "mapping": "columns.json",
+  "mapping": "io_vnbd_columns_template.json",
   "sessions": {"train": [], "evaluation": []},
   "model": {"type": "linear_speed_correction", "version": "REQUIRED"},
-  "evaluation": {"outage_seconds": 60, "seed": "REQUIRED"},
+  "evaluation": {"outage_seconds": 60, "seed": 42},
   "map": {"source": "REQUIRED", "version": "REQUIRED"}
 }
 ```
