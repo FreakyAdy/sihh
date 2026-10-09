@@ -1,103 +1,222 @@
-# SIH Intelligent Dead Reckoning
+# Intelligent Dead Reckoning for GNSS-Denied Navigation
 
-Navigation application and edge engine for GNSS-denied vehicle positioning using smartphone or external IMU data.
+An edge-deployable navigation engine and Android application for continuous
+vehicle positioning when GNSS is unavailable in tunnels, underpasses, parking
+structures, forests, and urban canyons.
 
-## Repository governance
+The project is designed for smartphone IMUs and external IMUs. It combines
+calibration, inertial propagation, learned speed correction, GNSS/INS
+recovery, non-holonomic constraints, and offline road-geometry matching.
 
-This repository uses [ONEFORALL](https://github.com/FreakyAdy/ONEFORALL) as its ownership and AI-agent coordination layer. The source of truth for boundaries is `[.ofa/config.yml](.ofa/config.yml)`.
+## Problem
 
-The main operator owns integration, shared contracts, CI, documentation, releases, and the final SIH demo. Contributors work only in their claimed zone:
+Consumer smartphones do not provide a vehicle speed feed. Their accelerometers
+and gyroscopes are affected by mounting orientation, gravity projection,
+engine vibration, potholes, braking, and sensor bias. Naive double integration
+therefore accumulates unacceptable position error during a GNSS outage.
 
-| Zone | Scope | Owner |
-| --- | --- | --- |
-| `ml` | IO-VNBD data, preprocessing, training, evaluation, model exports | Assigned teammate |
-| `engine` | GNSS/INS fusion, dead reckoning, map constraints, external-IMU adapters | Assigned teammate |
-| `mobile` | Android sensors, on-device runtime, UI, offline maps | Assigned teammate |
-| `shared` | Contracts, fixtures, tests, CI, docs, map tooling | Main operator |
+The system addresses this with:
 
-Before making changes:
+1. Explicit vehicle-frame calibration.
+2. A speed-correction model contract shared by training and Android runtime.
+3. Streaming GNSS/INS state management with outage and recovery hysteresis.
+4. Non-holonomic forward propagation and bounded map corrections.
+5. Deterministic replay and benchmark certification before device deployment.
 
-```powershell
-npm install -g github:FreakyAdy/ONEFORALL
-ofa whoami --set <your-github-handle>
-ofa status
-ofa claim <your-zone>
-ofa guard --staged
+## Capabilities
+
+### Navigation engine
+
+- GNSS-aided initialization and recovery.
+- Confirmed GNSS-outage transition to dead reckoning.
+- Confidence decay during outage.
+- Forward-motion and yaw propagation.
+- Timestamp, finite-value, and sensor-gap validation.
+- External-IMU payload adapter.
+- Bounded map correction interface.
+- Dependency-free `SegmentMapMatcher` with nearest-road projection,
+  cross-track gating, heading gating, and confidence scoring.
+
+### Machine learning and data
+
+- Explicit IO-VNBD CSV adapter with configurable column mappings.
+- Session-level leakage-safe train and evaluation splits.
+- Timestamp and vibration quality flags.
+- GNSS-anchored speed baseline.
+- Ridge-regularized speed-correction model with JSON export and import.
+- Matching Android `SpeedCorrectionModel` interface and JSON loader.
+
+### Android application
+
+- Accelerometer, gyroscope, magnetometer, and GPS capture.
+- Lifecycle-safe registration and shutdown.
+- Stationary gravity stability calibration.
+- Forward-motion calibration using GNSS bearing and speed.
+- Signed device-axis selection for reversed phone orientations.
+- Vehicle-frame acceleration and yaw-rate conversion.
+- Native GNSS/INS runtime with visible diagnostic failures.
+- Stale-GNSS detection rather than silently reusing an old fix.
+
+## Architecture
+
+```text
+Phone IMU / External IMU
+          |
+          v
+Calibration and vehicle-frame adapter
+          |
+          +--> Speed correction model
+          |
+          v
+GNSS/INS fusion and non-holonomic propagation
+          |
+          +--> Offline road-segment map matcher
+          |
+          v
+Navigation state, confidence, diagnostics, and UI
 ```
 
-Never commit the full IO-VNBD dataset, proprietary recordings, map extracts, credentials, signing keys, or generated model files that exceed repository limits. Use documented local download/cache steps instead.
+Repository layers:
 
-## Implemented vertical slices
+| Layer | Responsibility |
+| --- | --- |
+| `shared/idr` | Contracts, traces, replay, metrics, synthetic fixtures |
+| `ml/idr_ml` | Dataset conversion, quality processing, model training/export |
+| `edge-engine/idr_engine` | Streaming fusion, constraints, map matching, adapters |
+| `mobile/idr_mobile` | Bounded Python runtime seam for mobile integration |
+| `mobile/app` | Native Android capture, calibration, UI, and runtime binding |
+| `tests/` | Cross-layer deterministic tests |
+| `docs/` | Architecture, model card, benchmark, demo, and release evidence |
 
-- `shared/`: versioned IMU, GNSS, navigation state, trace, replay, and benchmark contracts
-- `edge-engine/`: streaming GNSS/INS fusion, non-holonomic propagation, map-constraint seam, and external-IMU adapters
-- `ml/`: explicit IO-VNBD CSV mapping, leakage-safe splits, quality flags, baseline training, and JSON model export
-- `mobile/`: bounded Python runtime plus Android capture, staged calibration, vehicle-frame adaptation, and native GNSS/INS runtime
-- `tests/`: 25 deterministic unit/integration tests across all Python layers
-- `docs/`: architecture, setup, demo, model card, release checklist, and benchmark evidence
+## Screening benchmark
 
-## Screening evidence
-
-The checked-in screening baseline is reproducible with no third-party Python
-dependencies:
+The checked-in benchmark is reproducible and intentionally labelled as a
+synthetic contract test, not field performance.
 
 | Scenario | Drift | Update rate | Outage transition | Result |
 | --- | ---: | ---: | ---: | --- |
-| Synthetic 1 km at 60 km/h, 40 s GNSS outage | 0.000% | 10.0 Hz | 0.0 s | PASS |
+| Synthetic 1 km at 60 km/h with 40 s GNSS outage | 0.000% | 10.0 Hz | 0.0 s | Pass |
 
-This is a deterministic sanity check of the replay contracts, not a claim of
-real tunnel or lane-level accuracy. Real IO-VNBD and phone-mounted evaluations
-must replace it before final performance claims. The report and trajectory
-plot are generated by:
+The generated report records 601 samples, 1,000 m travelled distance, and
+recovery at 50.1 s. Floating-point replay error is approximately
+`9.3e-13%`. This result does not establish lane-level accuracy, smartphone
+performance, tunnel performance, or real IO-VNBD performance.
+
+Evidence:
+
+- [Benchmark report](docs/evidence/synthetic-1km-report.json)
+- [Trajectory plot](docs/evidence/synthetic-1km-trajectory.svg)
+- [Benchmark methodology](docs/benchmarking.md)
+- [Model card](docs/model-card.md)
+
+Generate the evidence again:
 
 ```powershell
 & 'C:/Program Files/Python314/python.exe' scripts/generate_screening_evidence.py
 ```
 
-Outputs: [benchmark report](docs/evidence/synthetic-1km-report.json) and
-[trajectory plot](docs/evidence/synthetic-1km-trajectory.svg).
+## Quick start
 
-The preliminary speed model is a transparent, exportable ridge-regularized
-baseline in [ml/idr_ml/model.py](ml/idr_ml/model.py). The Android runtime
-exposes the matching injectable `SpeedCorrectionModel` contract in
-[NativeNavigationEngine.kt](mobile/app/src/main/java/org/sih/idr/NativeNavigationEngine.kt);
-the default neutral coefficients are intentionally not presented as trained
-phone performance. A production screening build must load coefficients
-trained from the permitted IO-VNBD subset and record its model version.
-
-The edge engine also contains a working, dependency-free
-[`SegmentMapMatcher`](edge-engine/idr_engine/constraints.py), with nearest
-segment projection, cross-track gating, heading gating, and confidence
-scoring. This is the concrete map-matching primitive used by the fusion
-correction seam; it is not merely a placeholder interface.
-
-The first vertical slice must replay a permitted IO-VNBD subset, produce a GNSS-aided/dead-reckoning trajectory, and report drift percentage, update rate, outage transition latency, and recovery behavior.
-
-## Run the replay baseline
-
-The first shared vertical slice is dependency-free Python and can run before the
-mobile and ML toolchains are installed:
+Run the dependency-free Python validation suite:
 
 ```powershell
-py -m unittest discover -s tests -v
+& 'C:/Program Files/Python314/python.exe' -m unittest discover -s tests -v
 ```
 
-The public contracts live in [shared/idr/models.py](shared/idr/models.py), the
-classical replay baseline is in [shared/idr/replay.py](shared/idr/replay.py),
-benchmark calculations are in [shared/idr/metrics.py](shared/idr/metrics.py),
-and JSONL interchange is in [shared/idr/trace.py](shared/idr/trace.py).
-Cross-zone scenarios are documented in
-[docs/integration-testing.md](docs/integration-testing.md).
-
-## Screening release
-
-Run the final local release check before packaging:
+Run release certification:
 
 ```powershell
 & 'C:/Program Files/Python314/python.exe' scripts/release_check.py
 ```
 
-The release evidence and operator procedure are documented in
-[docs/release-checklist.md](docs/release-checklist.md),
-[docs/model-card.md](docs/model-card.md), and
-[docs/demo-runbook.md](docs/demo-runbook.md).
+Expected current result: 27 tests pass and the synthetic release benchmark
+passes the drift and 10 Hz update-rate thresholds.
+
+## Model workflow
+
+The training-side baseline is implemented in
+[ml/idr_ml/model.py](ml/idr_ml/model.py). It consumes calibrated forward
+acceleration, yaw rate, and absolute acceleration and exports a versioned JSON
+artifact containing feature names and weights.
+
+The Android runtime consumes the same schema through
+`LinearSpeedCorrectionModel.fromJson` in
+[NativeNavigationEngine.kt](mobile/app/src/main/java/org/sih/idr/NativeNavigationEngine.kt).
+The current Android shell uses neutral coefficients until a permitted
+IO-VNBD-trained artifact is supplied. This is deliberate: the repository does
+not claim trained phone performance without a dataset, model version, and
+measured evaluation report.
+
+## Demo flow
+
+1. Start the Android app and grant location permission.
+2. Keep the device stationary for gravity stability calibration.
+3. Drive straight with a valid GNSS bearing and speed.
+4. Confirm vehicle-frame calibration and GNSS-aided mode.
+5. Trigger a GNSS blackout or replay the deterministic outage trace.
+6. Show dead-reckoning mode, confidence decay, and map-constrained output.
+7. Restore GNSS and show recovery hysteresis.
+8. Open the benchmark report and state its limitations.
+
+See the [demo runbook](docs/demo-runbook.md) for failure handling and the
+[release checklist](docs/release-checklist.md) for packaging requirements.
+
+## Current limitations
+
+- The checked-in performance evidence is synthetic.
+- IO-VNBD data and trained production weights are not committed.
+- OSM import and offline map packaging remain data-preparation steps.
+- APK compilation and physical-device validation require a local Android SDK,
+  Gradle, and a test device.
+- Real tunnel, multipath, vibration, and remounting performance is not yet
+  certified.
+- The system is a screening prototype and not a safety-critical navigation
+  system.
+
+## Project status
+
+Implemented:
+
+- Shared contracts and deterministic replay.
+- ML/data baseline and exportable model schema.
+- GNSS/INS fusion and external-IMU adapter.
+- Concrete road-segment map matcher.
+- Python mobile runtime.
+- Android capture, staged calibration, and native runtime seam.
+- Benchmark report and trajectory evidence.
+
+Next validation milestones:
+
+1. Train and evaluate on a permitted IO-VNBD subset.
+2. Convert a measured model artifact into the Android JSON schema.
+3. Import an offline OSM extract into local road segments.
+4. Build and install the Android APK.
+5. Validate mounted orientations, GNSS outages, and recovery on hardware.
+
+## Governance and contribution
+
+ONEFORALL defines ownership boundaries in
+[`.ofa/config.yml`](.ofa/config.yml). The project zones are:
+
+| Zone | Scope |
+| --- | --- |
+| `ml` | Dataset, preprocessing, training, evaluation, model export |
+| `engine` | Fusion, constraints, map matching, external-IMU adapters |
+| `mobile` | Android sensors, runtime, UI, and offline maps |
+| `shared` | Contracts, tests, documentation, CI, and releases |
+
+Before submitting changes:
+
+```powershell
+ofa doctor
+ofa guard --strict
+```
+
+Do not commit complete datasets, proprietary recordings, map extracts,
+credentials, signing keys, or oversized generated model binaries.
+
+## License and disclosure
+
+This repository is a Smart India Hackathon screening implementation. Dataset
+licenses, map licenses, model provenance, and real-world benchmark conditions
+must be recorded before external distribution or performance claims.
