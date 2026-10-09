@@ -39,6 +39,11 @@ The current native callback emits calibrated-frame input prerequisites, but the
 vehicle-frame alignment and engine adapter are still pending. It intentionally
 does not present raw device-frame values as lane-level navigation output.
 
+`VehicleCalibration` uses two stages: keep the phone/vehicle stationary for a
+stable gravity estimate, then drive straight with a valid GNSS bearing and
+speed. Failed stability checks enter an explicit failed state; calibration is
+never silently assumed.
+
 `VehicleFrameAdapter` now provides the explicit native conversion boundary. It
 requires a configured vehicle heading and device forward axis before producing
 longitudinal acceleration and yaw-rate samples. Until configured, the app shows

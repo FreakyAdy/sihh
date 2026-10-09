@@ -38,4 +38,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:text="Start sensing" />
+
+    <Button
+        android:id="@+id/calibrate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Calibrate vehicle frame" />
 </LinearLayout>

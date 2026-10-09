@@ -89,3 +89,8 @@ boundary. It requires explicit vehicle-heading/device-axis calibration and
 rejects adaptation before configuration. A future calibration workflow should
 derive these values from stationary and controlled-motion observations, then
 pass the resulting calibrated samples to the native fusion binding.
+
+`VehicleCalibration.kt` implements that workflow in two explicit stages:
+stationary gravity stability followed by forward motion with a GNSS bearing
+and speed. Its result contains pitch, roll, heading, and the selected device
+forward axis.
