@@ -124,6 +124,8 @@ Evidence:
 - [Limitations](docs/limitations.md)
 - [Data provenance record](docs/data-provenance.md)
 - [IO-VNBD evaluation harness](docs/io-vnbd-evaluation.md)
+- [Judge presentation playbook](docs/presentation-playbook.md)
+- [Production frontend handoff](docs/frontend-handoff.md)
 
 Generate the evidence again:
 

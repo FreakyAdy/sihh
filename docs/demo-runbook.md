@@ -43,3 +43,8 @@ The Android screen is a native shell over the existing estimator and sensor
 callbacks. The browser surface is a presentation and replay aid only. Neither
 surface adds a field-accuracy claim, live OSM coverage, or verified APK result
 when the Android SDK/device toolchain is unavailable.
+
+For the judge-facing narrative and timed speaker script, use the
+[presentation playbook](presentation-playbook.md). For production UI work by a
+separate frontend developer, use the [frontend handoff](frontend-handoff.md)
+before editing the mobile zone.
