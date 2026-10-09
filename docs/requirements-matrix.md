@@ -14,7 +14,7 @@ Statuses are evidence-based:
 | NHC and map matching | Partial | [`fusion.py`](../edge-engine/idr_engine/fusion.py), [`constraints.py`](../edge-engine/idr_engine/constraints.py) including `HmmMapMatcher` | OSM importer and real-trace comparison |
 | AI-based GNSS/INS fusion | Partial | [`fusion.py`](../edge-engine/idr_engine/fusion.py) active `FusionCorrectionModel` seam | Trained adaptive fusion correction and real outage comparison |
 | Seamless outage and recovery | Partial | [`fusion.py`](../edge-engine/idr_engine/fusion.py), [`SensorCaptureController.kt`](../mobile/app/src/main/java/org/sih/idr/SensorCaptureController.kt) | Device latency and recovery-jump measurements |
-| Real-time mobile UI | Partial | [`MainActivity.kt`](../mobile/app/src/main/java/org/sih/idr/MainActivity.kt) | APK build, physical device, smooth marker, offline map UI |
+| Real-time mobile UI | Partial | [`MainActivity.kt`](../mobile/app/src/main/java/org/sih/idr/MainActivity.kt), [`activity_main.xml`](../mobile/app/src/main/res/layout/activity_main.xml), [`web-demo`](../web-demo/) | APK build, physical device, live map tiles, smooth marker |
 | Drift under 10% | Partial | [`synthetic-1km-report.json`](evidence/synthetic-1km-report.json) | Real IO-VNBD and phone traces |
 | 10 Hz phone fusion | Partial | [`benchmark.py`](../shared/idr/benchmark.py) | Device measurement |
 | Approximately 200 Hz edge path | Partial | [`adapters.py`](../edge-engine/idr_engine/adapters.py) | High-rate replay and throughput report |

@@ -78,11 +78,15 @@ Android/Kotlin sensor callbacks should normalize device-frame values into this
 same runtime contract; the UI must display `RuntimeDiagnostics` instead of
 masking queue drops or estimator errors.
 
-The native Android shell is in `mobile/app/`. It currently provides the
-permission-aware diagnostic screen and `SensorCaptureController` for lifecycle
-safe accelerometer, gyroscope, and GNSS capture. Device-frame alignment and
+The native Android shell is in `mobile/app/`. It provides a map-first
+permission-aware screen and `SensorCaptureController` for lifecycle-safe
+accelerometer, gyroscope, and GNSS capture. Device-frame alignment and
 engine conversion remain an explicit adapter boundary; raw device-frame
 samples must not be presented as lane-level navigation success.
+
+The browser surface in `web-demo/` mirrors the Android visual language and
+replays deterministic state transitions for presentations. It is not a live
+sensor runtime, live map client, or substitute for Android inference.
 
 `mobile/app/.../VehicleFrameAdapter.kt` is the current native conversion
 boundary. It requires explicit vehicle-heading/device-axis calibration and

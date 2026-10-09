@@ -10,16 +10,20 @@
    panel.
 5. Keep the deterministic replay fallback available in case live GNSS or
    sensor conditions are unreliable.
+6. For a browser-only presentation, open `web-demo/index.html`; it uses the
+   same visual language and deterministic state sequence without network map
+   access or API keys.
 
 ## Live flow
 
-1. Start with GNSS-aided mode visible and show update age, confidence, and
-   current speed.
+1. Start with the map-first screen showing the route, GNSS-aided status,
+   confidence, update rate, and current speed.
 2. Begin the controlled route or replay trace.
 3. Trigger the GNSS blackout or select the recorded tunnel interval.
 4. Show transition to dead reckoning, confidence decay, and uninterrupted
    vehicle marker updates.
-5. Show the map-constrained trajectory and diagnostics without claiming more
+5. Show the rounded directions sheet, map-constrained trajectory, and
+   diagnostics without claiming more
    accuracy than the benchmark report supports.
 6. Restore GNSS and show recovery hysteresis before returning to GNSS-aided
    mode.
@@ -32,3 +36,10 @@ If a live sensor, map, model, or permission fails, stop and show the explicit
 diagnostic state. Run the deterministic replay instead of masking the failure
 with stale data. The evaluator should see that the system fails visibly and
 recovers predictably.
+
+## UI evidence boundary
+
+The Android screen is a native shell over the existing estimator and sensor
+callbacks. The browser surface is a presentation and replay aid only. Neither
+surface adds a field-accuracy claim, live OSM coverage, or verified APK result
+when the Android SDK/device toolchain is unavailable.
