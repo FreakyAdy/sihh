@@ -65,3 +65,9 @@ malformed records and non-increasing timestamps.
 ## Safety and failure behavior
 
 The estimator must expose confidence and mode rather than silently returning stale positions. If GNSS, IMU, map data, or model inputs become invalid, the runtime reports the degraded condition and preserves the last valid timestamped state.
+
+The first edge-engine implementation is in `edge-engine/idr_engine/`. It keeps
+outage detection and recovery hysteresis explicit, performs non-holonomic
+forward propagation, and accepts optional bounded `MapMatcher` corrections.
+External IMU transports should convert into `SensorFrame` through the adapter
+without placing transport-specific code in the estimator.

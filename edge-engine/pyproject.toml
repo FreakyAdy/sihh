@@ -1,0 +1,8 @@
+[project]
+name = "idr-engine"
+version = "0.1.0"
+description = "Platform-neutral GNSS/INS fusion engine for IDR"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["."]
