@@ -24,6 +24,13 @@ zones:
       - docs/
       - maps/
       - .github/
+      - .ofa/
+      - .cursor/
+      - README.md
+      - .gitignore
+      - AGENTS.md
+      - CLAUDE.md
+      - GEMINI.md
     owner: FreakyAdy
     description: Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
     claimed_at: '2026-10-09T21:12:23.573Z'

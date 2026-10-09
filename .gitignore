@@ -1,5 +1,7 @@
 # Local dependencies and build output
 node_modules/
+__pycache__/
+*.pyc
 dist/
 build/
 .gradle/

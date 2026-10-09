@@ -52,3 +52,5 @@ The public contracts live in [shared/idr/models.py](shared/idr/models.py), the
 classical replay baseline is in [shared/idr/replay.py](shared/idr/replay.py),
 benchmark calculations are in [shared/idr/metrics.py](shared/idr/metrics.py),
 and JSONL interchange is in [shared/idr/trace.py](shared/idr/trace.py).
+Cross-zone scenarios are documented in
+[docs/integration-testing.md](docs/integration-testing.md).

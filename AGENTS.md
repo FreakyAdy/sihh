@@ -27,7 +27,7 @@ that your developer has claimed.
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
 ### shared — 🔴 Claimed by **@FreakyAdy**
-- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`
+- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md`, `.gitignore`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
 - Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 
 ## Strict Rules
