@@ -77,3 +77,8 @@ state, bounded callback buffering, worker-thread draining, and diagnostics.
 Android/Kotlin sensor callbacks should normalize device-frame values into this
 same runtime contract; the UI must display `RuntimeDiagnostics` instead of
 masking queue drops or estimator errors.
+
+The native Android shell is in `mobile/app/`. It currently provides the
+permission-aware diagnostic screen and deliberately reports that live sensor
+integration is pending; it must not present placeholder values as navigation
+success.

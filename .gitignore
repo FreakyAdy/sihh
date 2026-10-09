@@ -6,6 +6,8 @@ dist/
 build/
 .gradle/
 mobile/.cxx/
+mobile/.gradle/
+mobile/app/build/
 
 # Local datasets, recordings, maps, and model exports
 data/

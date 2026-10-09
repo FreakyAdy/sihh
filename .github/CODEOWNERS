@@ -5,6 +5,9 @@
 #
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
+# Zone: mobile — Smartphone sensors, on-device inference, navigation UI, and offline maps
+/mobile/    @FreakyAdy
+
 # Zone: shared — Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 /shared/    @FreakyAdy
 /tests/    @FreakyAdy
@@ -13,8 +16,9 @@
 /.github/    @FreakyAdy
 /.ofa/    @FreakyAdy
 /.cursor/    @FreakyAdy
-/README.md    @FreakyAdy
-/.gitignore    @FreakyAdy
-/AGENTS.md    @FreakyAdy
-/CLAUDE.md    @FreakyAdy
-/GEMINI.md    @FreakyAdy
+/README.md/    @FreakyAdy
+/.gitignore/    @FreakyAdy
+/AGENTS.md/    @FreakyAdy
+/CLAUDE.md/    @FreakyAdy
+/GEMINI.md/    @FreakyAdy
+/scripts/    @FreakyAdy

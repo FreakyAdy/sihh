@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">IDR Navigation</string>
+    <string name="request_location">Location permission is required for GNSS-aided navigation.</string>
+</resources>

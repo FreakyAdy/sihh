@@ -16,3 +16,22 @@ The runtime:
 
 The current Python adapter is also the deterministic integration seam for the
 future Android/Kotlin sensor implementation.
+
+## Android shell
+
+The native application shell is under `app/`. It currently provides:
+
+- Gradle/Kotlin Android project configuration
+- runtime location permission request
+- a diagnostic-first navigation screen
+- explicit placeholder state until the sensor adapter is wired
+
+Build locally after installing Gradle and an Android SDK:
+
+```powershell
+gradlew.bat :app:assembleDebug
+```
+
+The shell intentionally does not claim live sensor support yet; the next
+mobile implementation step is to connect Android accelerometer, gyroscope,
+magnetometer, and GNSS callbacks to the shared runtime contract.

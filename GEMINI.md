@@ -22,12 +22,12 @@ that your developer has claimed.
 - Paths: `edge-engine/`
 - Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
 
-### mobile — 🟢 Available
+### mobile — 🔴 Claimed by **@FreakyAdy**
 - Paths: `mobile/`
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
 ### shared — 🔴 Claimed by **@FreakyAdy**
-- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md`, `.gitignore`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
+- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`
 - Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 
 ## Strict Rules

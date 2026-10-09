@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.IDR" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#1565C0</item>
+    </style>
+</resources>

@@ -15,8 +15,9 @@ zones:
   mobile:
     paths:
       - mobile/
-    owner: null
+    owner: FreakyAdy
     description: Smartphone sensors, on-device inference, navigation UI, and offline maps
+    claimed_at: '2026-10-09T21:49:14.259Z'
   shared:
     paths:
       - shared/
@@ -26,11 +27,11 @@ zones:
       - .github/
       - .ofa/
       - .cursor/
-      - README.md
-      - .gitignore
-      - AGENTS.md
-      - CLAUDE.md
-      - GEMINI.md
+      - README.md/
+      - .gitignore/
+      - AGENTS.md/
+      - CLAUDE.md/
+      - GEMINI.md/
       - scripts/
     owner: FreakyAdy
     description: Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
@@ -49,4 +50,9 @@ locks:
     owner: FreakyAdy
     claimed_at: '2026-10-09T21:12:23.573Z'
     expires_at: '2026-10-10T21:12:23.578Z'
+    ttl_hours: 24
+  - zone: mobile
+    owner: FreakyAdy
+    claimed_at: '2026-10-09T21:49:14.259Z'
+    expires_at: '2026-10-10T21:49:14.260Z'
     ttl_hours: 24
