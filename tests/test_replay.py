@@ -46,6 +46,7 @@ class ReplayTests(unittest.TestCase):
         self.assertAlmostEqual(metrics.update_rate_hz, 1.0)
         self.assertLess(metrics.drift_percent, 0.01)
         self.assertEqual(metrics.outage_transition_latency_s, 0.0)
+        self.assertEqual(metrics.recovery_timestamp_s, 8.0)
 
     def test_invalid_timestamp_is_rejected(self) -> None:
         replay = DeadReckoningReplay(

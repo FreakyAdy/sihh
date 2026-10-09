@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 from typing import Sequence
 
-from .models import NavigationState, SensorFrame
+from .models import NavigationMode, NavigationState, SensorFrame
 
 
 @dataclass(frozen=True)
@@ -16,6 +16,15 @@ class ReplayMetrics:
     travelled_distance_m: float
     drift_percent: float
     outage_transition_latency_s: float | None
+    recovery_timestamp_s: float | None
+
+    @property
+    def meets_drift_target(self) -> bool:
+        return self.drift_percent < 10.0
+
+    @property
+    def meets_mobile_rate_target(self) -> bool:
+        return self.update_rate_hz >= 10.0
 
 
 def measure_replay(
@@ -38,11 +47,25 @@ def measure_replay(
         for a, b in zip(frames, frames[1:])
         if None not in (a.truth_x_m, a.truth_y_m, b.truth_x_m, b.truth_y_m)
     )
-    outage_transition_latency_s = next(
+    outage_start = next(
+        (frame.imu.timestamp_s for frame in frames if frame.gnss is None),
+        None,
+    )
+    dead_reckoning_timestamp = next(
         (
-            state.timestamp_s - frame.imu.timestamp_s
+            state.timestamp_s
             for frame, state in zip(frames, states)
-            if frame.gnss is None and state.mode.value == "dead_reckoning"
+            if frame.gnss is None and state.mode == NavigationMode.DEAD_RECKONING
+        ),
+        None,
+    )
+    recovery_timestamp = next(
+        (
+            state.timestamp_s
+            for index, state in enumerate(states)
+            if index > 0
+            and state.mode == NavigationMode.GNSS_AIDED
+            and states[index - 1].mode == NavigationMode.DEAD_RECKONING
         ),
         None,
     )
@@ -57,5 +80,10 @@ def measure_replay(
             if travelled_distance_m > 0
             else 0.0
         ),
-        outage_transition_latency_s=outage_transition_latency_s,
+        outage_transition_latency_s=(
+            dead_reckoning_timestamp - outage_start
+            if dead_reckoning_timestamp is not None and outage_start is not None
+            else None
+        ),
+        recovery_timestamp_s=recovery_timestamp,
     )
