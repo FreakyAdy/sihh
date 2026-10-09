@@ -1,0 +1,8 @@
+[project]
+name = "idr-mobile-runtime"
+version = "0.1.0"
+description = "Bounded mobile sensor runtime adapter for IDR"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["."]

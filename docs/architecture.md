@@ -71,3 +71,9 @@ outage detection and recovery hysteresis explicit, performs non-holonomic
 forward propagation, and accepts optional bounded `MapMatcher` corrections.
 External IMU transports should convert into `SensorFrame` through the adapter
 without placing transport-specific code in the estimator.
+
+The mobile integration seam is in `mobile/idr_mobile/`. It owns lifecycle
+state, bounded callback buffering, worker-thread draining, and diagnostics.
+Android/Kotlin sensor callbacks should normalize device-frame values into this
+same runtime contract; the UI must display `RuntimeDiagnostics` instead of
+masking queue drops or estimator errors.
