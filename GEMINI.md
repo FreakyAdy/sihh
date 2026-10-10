@@ -26,7 +26,7 @@ that your developer has claimed.
 - Paths: `mobile/`
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
-### frontend — 🔴 Claimed by **@FreakyAdy**
+### frontend — 🔴 Claimed by **@Krushna**
 - Paths: `web-demo/`
 - Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
 

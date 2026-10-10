@@ -15,7 +15,7 @@
 /mobile/    @FreakyAdy
 
 # Zone: frontend — Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
-/web-demo/    @FreakyAdy
+/web-demo/    @Krushna
 
 # Zone: shared — Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 /shared/    @FreakyAdy
