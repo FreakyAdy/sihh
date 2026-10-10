@@ -9,7 +9,8 @@
   const state = {
     mode: "MANUAL", // MANUAL, AUTONOMOUS, SCAN_BYPASS
     dataSource: "SIMULATION", // SIMULATION or LIVE
-    espIp: "192.168.4.1",
+    espIp: localStorage.getItem("agyaan_rover_ip") || "192.168.4.1",
+    liveConnected: false,
     pose: { x: 0, y: 0, heading: 0 },
     speed: 0,
     lidarDist: 85,
@@ -50,6 +51,15 @@
   const autoStatusBadge = document.getElementById("autoStatusBadge");
   const connStatusTag = document.getElementById("connStatusTag");
   const connStatusText = document.getElementById("connStatusText");
+
+  // Rover Sensor IP Elements
+  const roverMasterIpInput = document.getElementById("roverMasterIp");
+  const btnConnectRover = document.getElementById("btnConnectRover");
+  const roverIpStatusBadge = document.getElementById("roverIpStatusBadge");
+  const roverLatencyTag = document.getElementById("roverLatencyTag");
+  const chipApPreset = document.getElementById("chipApPreset");
+  const chipLanPreset = document.getElementById("chipLanPreset");
+  const headerIpDisplay = document.getElementById("headerIpDisplay");
 
   // Arch Modal Elements
   const archModal = document.getElementById("archModal");
@@ -127,15 +137,131 @@
     srcLiveBtn.classList.remove("active");
     connStatusText.innerText = "SIMULATED TESTBED";
     connStatusTag.style.color = "var(--green-neon)";
+    if (roverIpStatusBadge) {
+      roverIpStatusBadge.innerText = "STANDBY";
+      roverIpStatusBadge.style.color = "var(--cyan-neon)";
+      roverIpStatusBadge.style.borderColor = "rgba(56, 189, 248, 0.2)";
+    }
   });
 
   srcLiveBtn.addEventListener("click", () => {
     state.dataSource = "LIVE";
     srcLiveBtn.classList.add("active");
     srcSimBtn.classList.remove("active");
-    connStatusText.innerText = "CONNECTING ESP32...";
+    connStatusText.innerText = `CONNECTING ${state.espIp}...`;
     connStatusTag.style.color = "var(--amber-neon)";
+    if (roverIpStatusBadge) {
+      roverIpStatusBadge.innerText = "CONNECTING...";
+      roverIpStatusBadge.style.color = "var(--amber-neon)";
+    }
+    setRoverIp(state.espIp, true);
   });
+
+  // -------------------------------------------------------------------------
+  // Rover Sensor IP Address Controller & Bridge Synchronization
+  // -------------------------------------------------------------------------
+  if (roverMasterIpInput) {
+    roverMasterIpInput.value = state.espIp;
+  }
+  if (headerIpDisplay) {
+    headerIpDisplay.innerText = state.espIp;
+  }
+
+  function setRoverIp(newIp, autoConnect = true) {
+    if (!newIp) return;
+    newIp = newIp.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+    state.espIp = newIp;
+    localStorage.setItem("agyaan_rover_ip", newIp);
+    if (roverMasterIpInput) roverMasterIpInput.value = newIp;
+    if (headerIpDisplay) headerIpDisplay.innerText = newIp;
+    if (roverLatencyTag) roverLatencyTag.innerText = `Syncing: ${newIp}`;
+
+    // Notify backend bridge server to update proxy target & background poller
+    fetch("/api/rover/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ip: newIp, enabled: autoConnect }),
+    })
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (roverLatencyTag) roverLatencyTag.innerText = "Bridge: Synced";
+      })
+      .catch(() => {
+        if (roverLatencyTag) roverLatencyTag.innerText = "Bridge: Standalone Mode";
+      });
+
+    if (autoConnect) {
+      state.dataSource = "LIVE";
+      srcLiveBtn.classList.add("active");
+      srcSimBtn.classList.remove("active");
+      connStatusText.innerText = `CONNECTING ${newIp}...`;
+      connStatusTag.style.color = "var(--amber-neon)";
+      if (roverIpStatusBadge) {
+        roverIpStatusBadge.innerText = "CONNECTING...";
+        roverIpStatusBadge.style.color = "var(--amber-neon)";
+      }
+      pollLiveEsp32();
+    }
+  }
+
+  if (btnConnectRover) {
+    btnConnectRover.addEventListener("click", () => {
+      const inputVal = roverMasterIpInput ? roverMasterIpInput.value : state.espIp;
+      setRoverIp(inputVal, true);
+    });
+  }
+
+  if (roverMasterIpInput) {
+    roverMasterIpInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        setRoverIp(roverMasterIpInput.value, true);
+      }
+    });
+  }
+
+  if (chipApPreset) {
+    chipApPreset.addEventListener("click", () => setRoverIp("192.168.4.1", true));
+  }
+  if (chipLanPreset) {
+    chipLanPreset.addEventListener("click", () => {
+      const current = roverMasterIpInput ? roverMasterIpInput.value : "192.168.204.10";
+      const promptIp = prompt("Enter Station/Router Wi-Fi IP for Rover Master ESP32:", current.startsWith("192.168.4") ? "192.168.204.10" : current);
+      if (promptIp) setRoverIp(promptIp, true);
+    });
+  }
+
+  // Initial backend config query on load
+  fetch("/api/rover/config")
+    .then((r) => r.json())
+    .then((cfg) => {
+      if (cfg && cfg.ip && (!localStorage.getItem("agyaan_rover_ip") || cfg.ip !== "192.168.4.1")) {
+        state.espIp = cfg.ip;
+        if (roverMasterIpInput) roverMasterIpInput.value = cfg.ip;
+        if (headerIpDisplay) headerIpDisplay.innerText = cfg.ip;
+      }
+    })
+    .catch(() => {});
+
+  // SSE Stream Receiver for instant Rover telemetry packets
+  try {
+    const sse = new EventSource("/api/stream");
+    sse.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.type === "rover_telemetry" && payload.telemetry) {
+          applyRoverTelemetry(payload.telemetry);
+        } else if (payload.type === "rover_config" && payload.ip) {
+          if (state.espIp !== payload.ip && !(roverMasterIpInput && document.activeElement === roverMasterIpInput)) {
+            state.espIp = payload.ip;
+            if (roverMasterIpInput) roverMasterIpInput.value = payload.ip;
+            if (headerIpDisplay) headerIpDisplay.innerText = payload.ip;
+          }
+        }
+      } catch (err) {}
+    };
+  } catch (err) {
+    console.warn("SSE stream unavailable");
+  }
 
   // -------------------------------------------------------------------------
   // 1. ISOMETRIC 3D TRANSFORMATION MATH
@@ -551,7 +677,15 @@
       else if (turn < 0) cmd = "left";
       else if (turn > 0) cmd = "right";
 
-      fetch(`http://${state.espIp}/cmd?cmd=${cmd}`).catch(() => {});
+      // 1. Forward through server bridge proxy
+      fetch("/api/rover/cmd", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cmd: cmd }),
+      }).catch(() => {
+        // Fallback direct request
+        fetch(`http://${state.espIp}/cmd?cmd=${cmd}`).catch(() => {});
+      });
     }
   }
 
@@ -597,31 +731,66 @@
   });
 
   // -------------------------------------------------------------------------
-  // 8. LIVE TELEMETRY INGESTION LOOP (WHEN ESP32 HARDWARE ONLINE)
+  // 8. LIVE TELEMETRY INGESTION (BRIDGE PROXY & DIRECT ESP32 SENSOR LINK)
   // -------------------------------------------------------------------------
+  function applyRoverTelemetry(data) {
+    state.liveConnected = true;
+    connStatusText.innerText = `ESP32 LIVE (${state.espIp})`;
+    connStatusTag.style.color = "var(--green-neon)";
+    if (roverIpStatusBadge) {
+      roverIpStatusBadge.innerText = "ONLINE";
+      roverIpStatusBadge.style.color = "var(--green-neon)";
+      roverIpStatusBadge.style.borderColor = "rgba(16, 185, 129, 0.4)";
+    }
+
+    if (data.x_cm !== undefined) state.pose.x = Number(data.x_cm);
+    if (data.y_cm !== undefined) state.pose.y = Number(data.y_cm);
+    if (data.heading_deg !== undefined) state.pose.heading = Number(data.heading_deg);
+    if (data.lidar_cm !== undefined) state.lidarDist = Number(data.lidar_cm);
+    if (data.lidar_str !== undefined) state.lidarStrength = Number(data.lidar_str);
+    if (data.ticks_l !== undefined) state.ticksL = Number(data.ticks_l);
+    if (data.ticks_r !== undefined) state.ticksR = Number(data.ticks_r);
+    if (data.mode) state.mode = data.mode;
+
+    state.breadcrumbs.push({ x: state.pose.x, y: state.pose.y });
+    if (state.breadcrumbs.length > 250) state.breadcrumbs.shift();
+  }
+
   function pollLiveEsp32() {
     if (state.dataSource !== "LIVE") return;
 
-    fetch(`http://${state.espIp}/telemetry`, { signal: AbortSignal.timeout(600) })
+    const t0 = performance.now();
+    // 1. Query backend bridge proxy first to prevent CORS/Private Network Access blocks
+    fetch("/api/rover/telemetry", { signal: AbortSignal.timeout(800) })
       .then((res) => res.json())
       .then((data) => {
-        connStatusText.innerText = "ESP32 CONNECTED";
-        connStatusTag.style.color = "var(--green-neon)";
-
-        state.pose.x = data.x_cm || state.pose.x;
-        state.pose.y = data.y_cm || state.pose.y;
-        state.pose.heading = data.heading_deg || state.pose.heading;
-        state.lidarDist = data.lidar_cm || state.lidarDist;
-        state.ticksL = data.ticks_l || state.ticksL;
-        state.ticksR = data.ticks_r || state.ticksR;
-        state.mode = data.mode || state.mode;
-
-        state.breadcrumbs.push({ x: state.pose.x, y: state.pose.y });
-        if (state.breadcrumbs.length > 200) state.breadcrumbs.shift();
+        if (data && data.connected === false && data.error) {
+          throw new Error(data.error);
+        }
+        const lat = Math.round(performance.now() - t0);
+        if (roverLatencyTag) roverLatencyTag.innerText = `RTT: ${lat}ms`;
+        applyRoverTelemetry(data);
       })
       .catch(() => {
-        connStatusText.innerText = "ESP32 DISCONNECTED";
-        connStatusTag.style.color = "var(--red-neon)";
+        // 2. Direct browser fetch fallback
+        fetch(`http://${state.espIp}/telemetry`, { signal: AbortSignal.timeout(600) })
+          .then((res) => res.json())
+          .then((data) => {
+            const lat = Math.round(performance.now() - t0);
+            if (roverLatencyTag) roverLatencyTag.innerText = `Direct: ${lat}ms`;
+            applyRoverTelemetry(data);
+          })
+          .catch(() => {
+            state.liveConnected = false;
+            connStatusText.innerText = `ESP32 OFFLINE (${state.espIp})`;
+            connStatusTag.style.color = "var(--red-neon)";
+            if (roverIpStatusBadge) {
+              roverIpStatusBadge.innerText = "NO SIGNAL";
+              roverIpStatusBadge.style.color = "var(--red-neon)";
+              roverIpStatusBadge.style.borderColor = "rgba(239, 68, 68, 0.4)";
+            }
+            if (roverLatencyTag) roverLatencyTag.innerText = "Timeout: 800ms";
+          });
       });
   }
   setInterval(pollLiveEsp32, 100);

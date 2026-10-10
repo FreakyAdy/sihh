@@ -20,10 +20,12 @@ import socket
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 # Reconfigure stdout for utf-8 on Windows
 if hasattr(sys.stdout, "reconfigure"):
@@ -49,6 +51,67 @@ LATEST_STATE: dict = {
     "gyro": {"yaw_deg": 0.0, "rate_rps": 0.0},
     "mock_outage": False,
 }
+
+# Physical ESP32 Rover Sensor Bridge Config & Cache
+ROVER_LOCK = threading.Lock()
+ROVER_CONFIG: dict = {
+    "ip": "192.168.4.1",
+    "enabled": False,
+    "connected": False,
+    "last_seen": 0.0,
+    "poll_interval_s": 0.1,  # 10 Hz
+    "telemetry": {
+        "mode": "MANUAL",
+        "x_cm": 0.0,
+        "y_cm": 0.0,
+        "heading_deg": 0.0,
+        "lidar_cm": 85,
+        "lidar_str": 1420,
+        "ticks_l": 0,
+        "ticks_r": 0,
+        "uptime_s": 0,
+    },
+    "last_error": None,
+}
+
+
+def rover_poller_worker() -> None:
+    """Background worker continuously querying the physical Rover ESP32 sensor endpoint when enabled."""
+    while True:
+        with ROVER_LOCK:
+            enabled = ROVER_CONFIG["enabled"]
+            ip = ROVER_CONFIG["ip"]
+            interval = ROVER_CONFIG["poll_interval_s"]
+
+        if enabled and ip:
+            url = f"http://{ip}/telemetry"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "AgYaan-Sensor-Bridge/1.0"},
+                )
+                with urllib.request.urlopen(req, timeout=0.8) as resp:
+                    if resp.status == 200:
+                        raw = resp.read().decode("utf-8", errors="replace")
+                        telemetry_data = json.loads(raw)
+                        with ROVER_LOCK:
+                            ROVER_CONFIG["connected"] = True
+                            ROVER_CONFIG["last_seen"] = time.time()
+                            ROVER_CONFIG["telemetry"] = telemetry_data
+                            ROVER_CONFIG["last_error"] = None
+
+                        # Broadcast over SSE to all connected HUD dashboards
+                        broadcast_event({
+                            "type": "rover_telemetry",
+                            "rover_ip": ip,
+                            "timestamp": time.time(),
+                            "telemetry": telemetry_data,
+                        })
+            except Exception as e:
+                with ROVER_LOCK:
+                    ROVER_CONFIG["connected"] = False
+                    ROVER_CONFIG["last_error"] = str(e)
+        time.sleep(interval)
 
 
 def get_local_ip() -> str:
@@ -122,6 +185,88 @@ class LiveBridgeHandler(SimpleHTTPRequestHandler):
                 self.send_response(HTTPStatus.BAD_REQUEST)
                 self.end_headers()
                 self.wfile.write(str(e).encode("utf-8"))
+        elif parsed.path == "/api/rover/config":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                with ROVER_LOCK:
+                    if "ip" in data and data["ip"]:
+                        clean_ip = str(data["ip"]).strip().replace("http://", "").replace("https://", "").rstrip("/")
+                        ROVER_CONFIG["ip"] = clean_ip
+                    if "enabled" in data:
+                        ROVER_CONFIG["enabled"] = bool(data["enabled"])
+                    resp_data = dict(ROVER_CONFIG)
+
+                broadcast_event({
+                    "type": "rover_config",
+                    "ip": resp_data["ip"],
+                    "enabled": resp_data["enabled"],
+                    "connected": resp_data["connected"],
+                })
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(resp_data).encode("utf-8"))
+            except Exception as e:
+                self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+        elif parsed.path == "/api/rover/cmd":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            cmd = None
+            try:
+                if body:
+                    data = json.loads(body.decode("utf-8"))
+                    cmd = data.get("cmd")
+            except Exception:
+                pass
+            if not cmd:
+                qs = parse_qs(parsed.query)
+                cmd = qs.get("cmd", [None])[0]
+
+            with ROVER_LOCK:
+                ip = ROVER_CONFIG["ip"]
+
+            if not cmd:
+                self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error":"Missing cmd parameter"}')
+                return
+
+            # Proxy motor drive command directly to physical Rover ESP32
+            url = f"http://{ip}/cmd?cmd={cmd}"
+            try:
+                req = urllib.request.Request(url, method="POST", headers={"User-Agent": "AgYaan-Bridge/1.0"})
+                with urllib.request.urlopen(req, timeout=1.0) as resp:
+                    resp_body = resp.read()
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "status": "ok",
+                        "sent_cmd": cmd,
+                        "rover_ip": ip,
+                        "esp_response": resp_body.decode("utf-8", errors="replace"),
+                    }).encode("utf-8"))
+            except Exception as e:
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "failed",
+                    "sent_cmd": cmd,
+                    "rover_ip": ip,
+                    "error": str(e),
+                }).encode("utf-8"))
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
             self.end_headers()
@@ -171,7 +316,91 @@ class LiveBridgeHandler(SimpleHTTPRequestHandler):
                 "subscribers": len(SUBSCRIBERS),
                 "latest_timestamp": LATEST_STATE.get("timestamp"),
                 "has_location": LATEST_STATE.get("has_location"),
+                "rover_connected": ROVER_CONFIG.get("connected"),
+                "rover_ip": ROVER_CONFIG.get("ip"),
             }).encode("utf-8"))
+        elif parsed.path == "/api/rover/config":
+            with ROVER_LOCK:
+                resp_data = dict(ROVER_CONFIG)
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(resp_data).encode("utf-8"))
+        elif parsed.path == "/api/rover/telemetry":
+            with ROVER_LOCK:
+                ip = ROVER_CONFIG["ip"]
+                cached_telemetry = ROVER_CONFIG["telemetry"]
+
+            url = f"http://{ip}/telemetry"
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "AgYaan-Bridge/1.0"})
+                with urllib.request.urlopen(req, timeout=0.8) as resp:
+                    raw = resp.read().decode("utf-8", errors="replace")
+                    telemetry_data = json.loads(raw)
+                    with ROVER_LOCK:
+                        ROVER_CONFIG["connected"] = True
+                        ROVER_CONFIG["last_seen"] = time.time()
+                        ROVER_CONFIG["telemetry"] = telemetry_data
+                        ROVER_CONFIG["last_error"] = None
+
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(raw.encode("utf-8"))
+            except Exception as e:
+                with ROVER_LOCK:
+                    ROVER_CONFIG["connected"] = False
+                    ROVER_CONFIG["last_error"] = str(e)
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "connected": False,
+                    "rover_ip": ip,
+                    "error": str(e),
+                    "cached_telemetry": cached_telemetry,
+                }).encode("utf-8"))
+        elif parsed.path == "/api/rover/cmd":
+            qs = parse_qs(parsed.query)
+            cmd = qs.get("cmd", [None])[0]
+            with ROVER_LOCK:
+                ip = ROVER_CONFIG["ip"]
+            if not cmd:
+                self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error":"Missing cmd parameter"}')
+                return
+            url = f"http://{ip}/cmd?cmd={cmd}"
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "AgYaan-Bridge/1.0"})
+                with urllib.request.urlopen(req, timeout=1.0) as resp:
+                    resp_body = resp.read()
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "status": "ok",
+                        "sent_cmd": cmd,
+                        "rover_ip": ip,
+                        "esp_response": resp_body.decode("utf-8", errors="replace"),
+                    }).encode("utf-8"))
+            except Exception as e:
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "failed",
+                    "sent_cmd": cmd,
+                    "rover_ip": ip,
+                    "error": str(e),
+                }).encode("utf-8"))
         elif parsed.path in ("/", "/rover", "/agyaan", "/agyaan_hud.html"):
             hud_path = ROVER_WEB_DIR / "agyaan_hud.html"
             data = hud_path.read_bytes()
@@ -289,19 +518,26 @@ def main() -> None:
 
     server = ThreadingHTTPServer(("0.0.0.0", port), LiveBridgeHandler)
 
+    # Start the background Rover hardware poller thread
+    poller = threading.Thread(target=rover_poller_worker, name="RoverSensorPoller", daemon=True)
+    poller.start()
+
     print("=" * 65)
     print("  🚀 IDR DUAL-DOMAIN MISSION CONTROL — LIVE DEMO")
     print("=" * 65)
     print(f"  🌕 AgYaan Lunar Rover HUD  : http://localhost:{port}/")
     print(f"  🌍 Earth Vehicle Nav (PS)  : http://localhost:{port}/index.html")
+    print(f"  🛰️ Rover Sensor Proxy     : http://localhost:{port}/api/rover/telemetry")
+    print(f"  📡 Rover Config Endpoint  : http://localhost:{port}/api/rover/config")
     print(f"  📲 Install Android APK     : http://{local_ip}:{port}/idr-navigation.apk")
     print(f"  📱 Phone Web Streamer      : http://{local_ip}:{port}/phone-streamer.html")
     print("=" * 65)
     print("  HOW TO RUN THE LIVE DEMO WITH THE JUDGE:")
     print("  1. Presenter default: Open http://localhost:8080/ for AgYaan 3D Rover HUD.")
-    print("  2. When judges ask about Problem Statement 26168 / road vehicles:")
+    print("  2. In HUD, enter Rover ESP32 Sensor IP (e.g. 192.168.4.1 or Wi-Fi LAN IP).")
+    print("  3. When judges ask about Problem Statement 26168 / road vehicles:")
     print("     Click 'Earth Vehicle Nav (PS 26168)' in the top bar to show 1km tunnel outage!")
-    print("  3. On phone over Wi-Fi, download APK: http://{local_ip}:{port}/idr-navigation.apk")
+    print("  4. On phone over Wi-Fi, download APK: http://{local_ip}:{port}/idr-navigation.apk")
     print("=" * 65)
     print("Press Ctrl+C to stop the bridge server.\n")
 

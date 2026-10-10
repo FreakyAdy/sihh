@@ -346,6 +346,66 @@ body {
   cursor: pointer;
 }
 
+.rover-sensor-panel {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.3s;
+}
+
+.rover-sensor-panel:focus-within {
+  border-color: var(--cyan-neon);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+.active-connect-btn {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(2, 132, 199, 0.5));
+  border: 1px solid var(--cyan-neon);
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.active-connect-btn:hover {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.6), rgba(2, 132, 199, 0.8));
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.ip-helper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ip-preset-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ip-preset-chip:hover {
+  color: var(--cyan-neon);
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.ip-ping-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
 /* -------------------------------------------------------------------------
  * Center 3D Isometric Lunar Hazard Canvas
  * ------------------------------------------------------------------------- */

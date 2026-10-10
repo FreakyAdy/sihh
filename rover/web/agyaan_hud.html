@@ -38,6 +38,9 @@
     </nav>
 
     <div class="header-status-group">
+      <div class="status-tag" id="roverHeaderIpTag" style="color: var(--amber-neon); border-color: rgba(245, 158, 11, 0.4);">
+        <span>🛰️ IP: </span><span id="headerIpDisplay">192.168.4.1</span>
+      </div>
       <div class="status-tag" id="connStatusTag">
         <span class="status-dot"></span>
         <span id="connStatusText">SIMULATED TESTBED</span>
@@ -202,6 +205,25 @@
             <span class="metric-unit">V</span>
           </div>
           <div class="metric-sub" id="valRssi">-42 dBm (ESP-NOW)</div>
+        </div>
+      </div>
+
+      <!-- Master ESP32 Sensor & Telemetry Link Configuration -->
+      <div class="rover-sensor-panel">
+        <div class="panel-header" style="padding-bottom: 6px; border-bottom: 1px solid rgba(56, 189, 248, 0.15);">
+          <div class="panel-title" style="font-size: 11px;">
+            <span>🛰️</span> ROVER SENSOR IP LINK
+          </div>
+          <span class="panel-badge" id="roverIpStatusBadge">STANDBY</span>
+        </div>
+        <div class="cam-ip-bar" style="margin-top: 6px;">
+          <input type="text" id="roverMasterIp" class="cam-ip-input" placeholder="Rover IP (e.g. 192.168.4.1)" value="192.168.4.1" spellcheck="false" autocomplete="off">
+          <button id="btnConnectRover" class="cam-ip-btn active-connect-btn">Connect</button>
+        </div>
+        <div class="ip-helper-row">
+          <span class="ip-preset-chip" id="chipApPreset" title="Default AP Mode (AgYaan_Rover_AP)">AP: 192.168.4.1</span>
+          <span class="ip-preset-chip" id="chipLanPreset" title="Station Mode DHCP LAN">STA LAN</span>
+          <span class="ip-ping-tag" id="roverLatencyTag">Bridge: Ready</span>
         </div>
       </div>
 
