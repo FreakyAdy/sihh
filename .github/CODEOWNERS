@@ -14,6 +14,9 @@
 # Zone: mobile — Smartphone sensors, on-device inference, navigation UI, and offline maps
 /mobile/    @FreakyAdy
 
+# Zone: frontend — Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
+/web-demo/    @Krushna
+
 # Zone: shared — Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 /shared/    @FreakyAdy
 /tests/    @FreakyAdy
@@ -29,4 +32,6 @@
 /GEMINI.md/    @FreakyAdy
 /scripts/    @FreakyAdy
 /rover/    @FreakyAdy
-/web-demo/    @FreakyAdy
+/.obsidian/    @FreakyAdy
+/run_demo.bat    @FreakyAdy
+/run_demo.ps1    @FreakyAdy

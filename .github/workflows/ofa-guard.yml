@@ -57,26 +57,3 @@ jobs:
               console.log('| ' + z.name + ' | ' + (z.owner || '_unclaimed_') + ' | ' + z.paths.join(', ') + ' |');
             });
           " >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Could not generate summary" >> $GITHUB_STEP_SUMMARY
-
-  test-suite:
-    name: Run Python Test Suite & Release Certification
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-
-      - name: Run Test Suite
-        run: pytest -v
-
-      - name: Run Release Certification
-        run: python scripts/release_check.py

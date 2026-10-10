@@ -26,8 +26,12 @@ that your developer has claimed.
 - Paths: `mobile/`
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
+### frontend — 🔴 Claimed by **@Krushna**
+- Paths: `web-demo/`
+- Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
+
 ### shared — 🔴 Claimed by **@FreakyAdy**
-- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`, `rover/`, `web-demo/`
+- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`, `rover/`, `.obsidian/`, `run_demo.bat`, `run_demo.ps1`
 - Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 
 ## Strict Rules
