@@ -15,7 +15,7 @@ This project uses ONEFORALL (ofa) for multi-developer AI collaboration.
   - IO-VNBD ingestion, preprocessing, training, evaluation, and model exports
 - **engine** (@FreakyAdy): `edge-engine/`
   - Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
-- **mobile** (@FreakyAdy): `mobile/`, `idr-navigation.apk/`
+- **mobile** (@Krushna): `mobile/`, `idr-navigation.apk/`
   - Smartphone sensors, on-device inference, navigation UI, and offline maps
 - **frontend** (@Krushna): `web-demo/`
   - Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas

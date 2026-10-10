@@ -18,9 +18,9 @@ zones:
     paths:
       - mobile/
       - idr-navigation.apk/
-    owner: FreakyAdy
+    owner: Krushna
     description: Smartphone sensors, on-device inference, navigation UI, and offline maps
-    claimed_at: '2026-10-10T20:19:15.349Z'
+    claimed_at: '2026-10-10T20:22:26.101Z'
   frontend:
     paths:
       - web-demo/
@@ -80,7 +80,7 @@ locks:
     expires_at: '2026-10-11T07:56:16.535Z'
     ttl_hours: 24
   - zone: mobile
-    owner: FreakyAdy
-    claimed_at: '2026-10-10T20:19:15.349Z'
-    expires_at: '2026-10-11T20:19:15.351Z'
+    owner: Krushna
+    claimed_at: '2026-10-10T20:22:26.101Z'
+    expires_at: '2026-10-11T20:22:26.102Z'
     ttl_hours: 24
