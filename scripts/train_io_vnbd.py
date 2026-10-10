@@ -239,27 +239,33 @@ def main() -> int:
 class _ModelSpeedCorrection:
     """Wraps SpeedCorrectionModel as a FusionCorrectionModel.
 
-    The speed model predicts absolute speed, but the correction interface
-    expects a FusionCorrection with bounded factors.  We use the ratio of
-    predicted vs IMU-integrated speed as an acceleration scale correction,
-    clamped to [0.5, 1.5] so a bad prediction cannot catastrophically diverge.
+    The speed model predicts speed. We supply this as speed_override_mps so the
+    fusion filter blends learned estimates with dead reckoning propagation.
     """
 
     def __init__(self, model: SpeedCorrectionModel) -> None:
         self._model = model
-        self._last_speed: float = 0.0
+        self._current_speed: float = 0.0
+        self._last_t: float | None = None
 
     def predict(self, frame: SensorFrame) -> FusionCorrection:
-        predicted = self._model.predict(frame)
-        # Use predicted speed to modulate acceleration scale
-        # This is a simple heuristic that will be replaced by a proper
-        # velocity-increment correction in the next sprint.
-        if self._last_speed > 0.5 and predicted > 0.0:
-            scale = max(0.5, min(1.5, predicted / self._last_speed))
+        t = frame.imu.timestamp_s
+        dt = 0.0 if self._last_t is None else max(0.0, t - self._last_t)
+        self._last_t = t
+        if frame.gnss is not None and frame.gnss.speed_mps is not None:
+            self._current_speed = frame.gnss.speed_mps
         else:
-            scale = 1.0
-        self._last_speed = predicted
-        return FusionCorrection(acceleration_scale=scale)
+            self._current_speed = max(0.0, self._current_speed + frame.imu.forward_acceleration_mps2 * dt)
+
+        predicted = self._model.predict(frame)
+        if math.isfinite(predicted) and predicted > 0.0:
+            override = 0.85 * self._current_speed + 0.15 * predicted
+        else:
+            override = None
+        return FusionCorrection(
+            speed_override_mps=override,
+            acceleration_scale=1.0,
+        )
 
 
 # ---------------------------------------------------------------------------
