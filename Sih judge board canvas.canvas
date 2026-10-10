@@ -1,0 +1,7 @@
+{
+	"nodes":[
+		{"id":"06b65a9660e7d43a","x":-12,"y":-107,"width":400,"height":400,"type":"file","file":"docs/presentation-playbook.md"},
+		{"id":"1dcb19f29101554c","x":466,"y":-9,"width":400,"height":300,"type":"file","file":"docs/evidence/io-vnbd/trajectory-iovnbd-outage.svg"}
+	],
+	"edges":[]
+}

@@ -1,0 +1,51 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": false,
+  "showAttachments": true,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:edge-engine  ",
+      "color": {
+        "a": 1,
+        "rgb": 5431387
+      }
+    },
+    {
+      "query": "path:mobile",
+      "color": {
+        "a": 1,
+        "rgb": 14725458
+      }
+    },
+    {
+      "query": "path:docs",
+      "color": {
+        "a": 1,
+        "rgb": 14710098
+      }
+    },
+    {
+      "query": "path:tests  ",
+      "color": {
+        "a": 1,
+        "rgb": 4587648
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.518713248970312,
+  "repelStrength": 10,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 0.9999999999999911,
+  "close": true
+}
