@@ -257,6 +257,13 @@
           <button class="seg-btn active" data-scenario="tunnel" role="tab">Tunnel (600m)</button>
           <button class="seg-btn" data-scenario="canyon" role="tab">Urban Canyon</button>
           <button class="seg-btn" data-scenario="jam" role="tab">Tunnel Jam (ZUPT)</button>
+          <button class="seg-btn" data-scenario="live" id="liveScenarioBtn" role="tab" style="color: #ff453a; font-weight: 700;">🔴 Live Phone</button>
+        </div>
+
+        <!-- Live Device Controls Bar (shown in Live mode) -->
+        <div id="liveControlsBar" style="display: none; margin: 10px 0 4px; gap: 8px;">
+          <button id="indoorOriginBtn" class="apple-btn secondary" style="flex: 1; padding: 10px; font-size: 12px;" title="Establish starting coordinate origin indoors">📍 Set Venue Origin</button>
+          <a id="phoneStreamerLink" href="phone-streamer.html" target="_blank" class="apple-btn secondary" style="flex: 1; padding: 10px; font-size: 12px; text-decoration: none; text-align: center;">📱 Phone Streamer</a>
         </div>
 
         <!-- Algorithmic Constraints Status Row -->

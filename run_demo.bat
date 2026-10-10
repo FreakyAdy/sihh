@@ -10,10 +10,10 @@ echo.
 echo Launching your browser at http://localhost:8080/index.html ...
 start http://localhost:8080/index.html
 echo.
-echo [!] Server is active. Edit files in 'web-demo/' and refresh your browser!
+echo [!] Server is active with Live Phone Bridge support!
 echo [!] Press Ctrl+C in this window to stop the server when done.
 echo ================================================================
 echo.
 
-python -m http.server 8080 --directory web-demo
+python scripts/live_sensor_bridge.py
 pause

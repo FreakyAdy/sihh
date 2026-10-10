@@ -23,9 +23,9 @@ zones:
   frontend:
     paths:
       - web-demo/
-    owner: Krushna
+    owner: FreakyAdy
     description: Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
-    claimed_at: '2026-10-10T07:45:00.000Z'
+    claimed_at: '2026-10-10T07:55:26.060Z'
   shared:
     paths:
       - shared/
@@ -43,8 +43,8 @@ zones:
       - scripts/
       - rover/
       - .obsidian/
-      - run_demo.bat
-      - run_demo.ps1
+      - run_demo.bat/
+      - run_demo.ps1/
     owner: FreakyAdy
     description: Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
     claimed_at: '2026-10-09T21:12:23.573Z'
@@ -79,7 +79,7 @@ locks:
     expires_at: '2026-10-10T23:17:45.186Z'
     ttl_hours: 24
   - zone: frontend
-    owner: Krushna
-    claimed_at: '2026-10-10T07:45:00.000Z'
-    expires_at: '2026-10-11T07:45:00.000Z'
+    owner: FreakyAdy
+    claimed_at: '2026-10-10T07:55:26.060Z'
+    expires_at: '2026-10-11T07:55:26.061Z'
     ttl_hours: 24

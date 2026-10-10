@@ -15,7 +15,7 @@
 /mobile/    @FreakyAdy
 
 # Zone: frontend — Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
-/web-demo/    @Krushna
+/web-demo/    @FreakyAdy
 
 # Zone: shared — Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 /shared/    @FreakyAdy
@@ -33,5 +33,5 @@
 /scripts/    @FreakyAdy
 /rover/    @FreakyAdy
 /.obsidian/    @FreakyAdy
-/run_demo.bat    @FreakyAdy
-/run_demo.ps1    @FreakyAdy
+/run_demo.bat/    @FreakyAdy
+/run_demo.ps1/    @FreakyAdy

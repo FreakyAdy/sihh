@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>IDR Phone Sensor Streamer — Live Judge Test</title>
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: rgba(22, 27, 34, 0.85);
+      --border: rgba(255, 255, 255, 0.12);
+      --accent: #0a84ff;
+      --green: #30d158;
+      --red: #ff453a;
+      --amber: #ffd60a;
+      --text: #f5f5f7;
+      --subtext: #8e8e93;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    header {
+      text-align: center;
+      padding: 12px 0 6px;
+    }
+    h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    p.sub { font-size: 13px; color: var(--subtext); margin-top: 4px; }
+    .status-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(12px);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .badge.connected { background: rgba(48, 209, 88, 0.2); color: var(--green); }
+    .badge.outage { background: rgba(255, 69, 58, 0.25); color: var(--red); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .gauge {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+    }
+    .gauge-val { font-size: 28px; font-weight: 800; font-family: ui-monospace, monospace; margin: 4px 0; }
+    .gauge-lbl { font-size: 11px; text-transform: uppercase; color: var(--subtext); letter-spacing: 0.5px; }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:active { opacity: 0.8; transform: scale(0.98); }
+    .btn-danger {
+      background: rgba(255, 69, 58, 0.15);
+      border: 1px solid var(--red);
+      color: var(--red);
+    }
+    .btn-danger.active {
+      background: var(--red);
+      color: #fff;
+    }
+    .log-box {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--subtext);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📡 IDR Phone Sensor Streamer</h1>
+    <p class="sub">Transmits live motion & GNSS to laptop for judge live test</p>
+  </header>
+
+  <div class="status-card">
+    <div>
+      <div style="font-size: 13px; font-weight: 600;">Stream Connection</div>
+      <div style="font-size: 11px; color: var(--subtext);" id="connRate">Idle • Tap Start below</div>
+    </div>
+    <span class="badge" id="connBadge">⚪ Idle</span>
+  </div>
+
+  <div class="grid">
+    <div class="gauge">
+      <div class="gauge-lbl">Heading (Gyro)</div>
+      <div class="gauge-val" id="valHeading">0°</div>
+      <div style="font-size: 10px; color: var(--subtext);" id="valYawRate">0.0 rad/s</div>
+    </div>
+    <div class="gauge">
+      <div class="gauge-lbl">Forward Accel</div>
+      <div class="gauge-val" id="valAccel">0.0</div>
+      <div style="font-size: 10px; color: var(--subtext);">m/s²</div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <div>
+      <div style="font-size: 13px; font-weight: 600;">Physical Location (GNSS)</div>
+      <div style="font-size: 11px; color: var(--subtext);" id="gpsCoords">Waiting for fix...</div>
+    </div>
+    <span class="badge" id="gpsBadge">⚪ Acquiring</span>
+  </div>
+
+  <button id="btnStart" class="btn btn-primary" onclick="toggleStreaming()">
+    🚀 Start Sensor Transmission
+  </button>
+
+  <button id="btnCutGps" class="btn btn-danger" onclick="toggleCutGps()">
+    🚨 Cut Location (Simulate Tunnel Outage)
+  </button>
+
+  <div class="log-box" id="logBox">
+    Status: Ready to stream.<br>
+    Tip: Hand this phone to the judge, have them rotate it or walk, then tap "Cut Location" to demonstrate live real-time dead reckoning!
+  </div>
+
+  <script>
+    let isStreaming = false;
+    let mockOutage = false;
+    let geoWatchId = null;
+    let latestLocation = null;
+    let latestOrientation = { alpha: 0, beta: 0, gamma: 0 };
+    let latestMotion = { x: 0, y: 0, z: 0, rz: 0 };
+    let streamInterval = null;
+    let packetCount = 0;
+    let lastSecondCount = 0;
+    let hz = 0;
+
+    // Calculate transmission rate
+    setInterval(() => {
+      hz = packetCount - lastSecondCount;
+      lastSecondCount = packetCount;
+      if (isStreaming) {
+        document.getElementById("connRate").textContent = `Transmitting at ${hz} Hz • ${packetCount} packets`;
+      }
+    }, 1000);
+
+    function log(msg) {
+      const box = document.getElementById("logBox");
+      box.innerHTML = msg + "<br>" + box.innerHTML.slice(0, 300);
+    }
+
+    async function toggleStreaming() {
+      const btn = document.getElementById("btnStart");
+      if (!isStreaming) {
+        // Request iOS 13+ sensor permissions if needed
+        if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+          try {
+            const resp = await DeviceMotionEvent.requestPermission();
+            if (resp !== "granted") {
+              alert("Motion sensor permission is required for live testing.");
+              return;
+            }
+          } catch (e) {
+            console.warn(e);
+          }
+        }
+
+        window.addEventListener("deviceorientation", onOrientation);
+        window.addEventListener("devicemotion", onMotion);
+
+        if ("geolocation" in navigator) {
+          geoWatchId = navigator.geolocation.watchPosition(
+            onLocation,
+            (err) => {
+              log(`GNSS warning: ${err.message}`);
+              document.getElementById("gpsCoords").textContent = "Indoor Mode (Zero satellite lock)";
+            },
+            { enableHighAccuracy: true, maximumAge: 1000 }
+          );
+        }
+
+        streamInterval = setInterval(sendPacket, 66); // ~15 Hz
+        isStreaming = true;
+        btn.textContent = "⏹ Stop Sensor Transmission";
+        btn.style.background = "#3a3a3c";
+        document.getElementById("connBadge").textContent = "🟢 Live 15Hz";
+        document.getElementById("connBadge").className = "badge connected";
+        log("Streaming active! Phone is now feeding laptop navigation engine.");
+      } else {
+        window.removeEventListener("deviceorientation", onOrientation);
+        window.removeEventListener("devicemotion", onMotion);
+        if (geoWatchId) navigator.geolocation.clearWatch(geoWatchId);
+        clearInterval(streamInterval);
+        isStreaming = false;
+        btn.textContent = "🚀 Start Sensor Transmission";
+        btn.style.background = "var(--accent)";
+        document.getElementById("connBadge").textContent = "⚪ Idle";
+        document.getElementById("connBadge").className = "badge";
+        document.getElementById("connRate").textContent = "Stopped";
+      }
+    }
+
+    function toggleCutGps() {
+      mockOutage = !mockOutage;
+      const btn = document.getElementById("btnCutGps");
+      const badge = document.getElementById("gpsBadge");
+      if (mockOutage) {
+        btn.classList.add("active");
+        btn.textContent = "✅ Restore Location Signal (Egress)";
+        badge.textContent = "🔴 Outage Active";
+        badge.className = "badge outage";
+        log("GNSS signal CUT! Laptop is now dead-reckoning on live IMU.");
+      } else {
+        btn.classList.remove("active");
+        btn.textContent = "🚨 Cut Location (Simulate Tunnel Outage)";
+        badge.textContent = "🟢 Locked";
+        badge.className = "badge connected";
+        log("GNSS restored! Reacquiring fix with hysteresis.");
+      }
+    }
+
+    function onOrientation(e) {
+      if (e.alpha !== null) {
+        latestOrientation.alpha = e.alpha;
+        const deg = Math.round(e.alpha);
+        document.getElementById("valHeading").textContent = `${deg}°`;
+      }
+    }
+
+    function onMotion(e) {
+      if (e.acceleration) {
+        const ax = e.acceleration.x || 0;
+        const ay = e.acceleration.y || 0;
+        const az = e.acceleration.z || 0;
+        latestMotion.x = ax;
+        latestMotion.y = ay;
+        latestMotion.z = az;
+        const mag = Math.sqrt(ax * ax + ay * ay).toFixed(1);
+        document.getElementById("valAccel").textContent = mag;
+      }
+      if (e.rotationRate && e.rotationRate.gamma) {
+        latestMotion.rz = (e.rotationRate.gamma * Math.PI) / 180.0;
+        document.getElementById("valYawRate").textContent = `${latestMotion.rz.toFixed(2)} rad/s`;
+      }
+    }
+
+    function onLocation(pos) {
+      latestLocation = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        speed: pos.coords.speed || 0.0,
+        accuracy: pos.coords.accuracy || 5.0,
+        heading: pos.coords.heading || null,
+      };
+      document.getElementById("gpsCoords").textContent =
+        `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)} (±${pos.coords.accuracy.toFixed(0)}m)`;
+      if (!mockOutage) {
+        document.getElementById("gpsBadge").textContent = "🟢 Locked";
+        document.getElementById("gpsBadge").className = "badge connected";
+      }
+    }
+
+    function sendPacket() {
+      const packet = {
+        timestamp: Date.now() / 1000.0,
+        has_location: !mockOutage && latestLocation !== null,
+        location: mockOutage ? null : latestLocation,
+        accel: {
+          x: latestMotion.x,
+          y: latestMotion.y,
+          z: latestMotion.z,
+        },
+        gyro: {
+          heading_deg: latestOrientation.alpha,
+          rate_rps: latestMotion.rz,
+        },
+        mock_outage: mockOutage,
+      };
+
+      fetch("/api/sensor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(packet),
+      }).then(() => {
+        packetCount++;
+      }).catch((e) => {
+        console.warn("Transmission error:", e);
+      });
+    }
+  </script>
+</body>
+</html>

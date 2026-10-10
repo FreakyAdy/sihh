@@ -8,9 +8,9 @@ Write-Host ""
 
 Start-Process "http://localhost:8080/index.html"
 
-Write-Host "[!] Server is active. Edit files in 'web-demo/' and refresh your browser!" -ForegroundColor Green
+Write-Host "[!] Server is active with Live Phone Bridge support!" -ForegroundColor Green
 Write-Host "[!] Press Ctrl+C in this console to stop the server when done." -ForegroundColor Yellow
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-python -m http.server 8080 --directory web-demo
+python scripts/live_sensor_bridge.py

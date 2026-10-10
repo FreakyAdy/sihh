@@ -64,6 +64,26 @@ const SCENARIOS = {
     gyroBias: 0.002,
     isJam: true,
   },
+  live: {
+    id: "live",
+    name: "Live Physical Sensors (Judge Real-Time Mode)",
+    speedLimit: 50,
+    totalDurationS: 120.0,
+    speedKmph: 30.0,
+    outageStartS: 999.0,
+    outageEndS: 999.0,
+    tunnelProgress: "Live Physical Phone Fusion",
+    streetName: "Exhibition Venue Route",
+    streetSub: "Live Inertial Fusion • Physical Phone IMU",
+    instructionPrep: "Connected to Live Sensors",
+    instructionOutage: "Physical GNSS Cut • Real-Time IMU Fusion",
+    instructionRecover: "Location Signal Restored",
+    instructionComplete: "Nominal Live Tracking",
+    accelBias: 0.015,
+    gyroBias: 0.0012,
+    isJam: false,
+    isLive: true,
+  },
 };
 
 // Simulation State
@@ -93,6 +113,71 @@ const sim = {
   naiveHistory: [],
 };
 
+// Live Real-Device Sensor State (Bridge & Local HTML5)
+let liveSseSource = null;
+const liveSensor = {
+  active: false,
+  headingDeg: 0.0,
+  yawRateRps: 0.0,
+  accelMag: 0.0,
+  hasLocation: true,
+  lat: null,
+  lon: null,
+  mockOutage: false,
+  lastPacketTime: 0,
+};
+
+function connectLiveStream() {
+  if (liveSseSource) return;
+  try {
+    liveSseSource = new EventSource("/api/stream");
+    liveSseSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        liveSensor.active = true;
+        liveSensor.lastPacketTime = Date.now();
+        if (data.type === "outage_toggle") {
+          sim.manualOutageActive = Boolean(data.mock_outage);
+          render();
+          return;
+        }
+        if (data.gyro && typeof data.gyro.heading_deg === "number") {
+          liveSensor.headingDeg = data.gyro.heading_deg;
+        }
+        if (data.gyro && typeof data.gyro.rate_rps === "number") {
+          liveSensor.yawRateRps = data.gyro.rate_rps;
+        }
+        if (data.accel) {
+          const ax = data.accel.x || 0;
+          const ay = data.accel.y || 0;
+          liveSensor.accelMag = Math.sqrt(ax * ax + ay * ay);
+        }
+        if (data.has_location !== undefined) {
+          liveSensor.hasLocation = Boolean(data.has_location);
+          sim.manualOutageActive = !data.has_location || Boolean(data.mock_outage);
+        }
+        if (sim.activeScenario && sim.activeScenario.isLive) {
+          render();
+        }
+      } catch (e) {
+        console.warn("SSE parse error", e);
+      }
+    };
+  } catch (e) {
+    console.warn("SSE not available", e);
+  }
+
+  // Fallback to local mobile browser sensors if accessed directly
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener("deviceorientation", (e) => {
+      if (e.alpha !== null) {
+        liveSensor.active = true;
+        liveSensor.headingDeg = e.alpha;
+      }
+    });
+  }
+}
+
 // DOM References
 const $ = (id) => document.getElementById(id);
 const routePath = $("routePath");
@@ -113,6 +198,20 @@ function bindEvents() {
   // Floating controls
   if ($("toggleGhostBtn")) $("toggleGhostBtn").addEventListener("click", toggleCompareNaive);
   if ($("manualOutageBtn")) $("manualOutageBtn").addEventListener("click", triggerManualOutage);
+
+  // Indoor venue origin button
+  if ($("indoorOriginBtn")) {
+    $("indoorOriginBtn").addEventListener("click", () => {
+      sim.currentTimeS = 0.0;
+      sim.mode = "GNSS-AIDED";
+      sim.confidence = 1.0;
+      sim.outageDurationS = 0.0;
+      sim.crossTrackM = 0.0;
+      if ($("maneuverStreet")) $("maneuverStreet").textContent = "Venue Origin Anchored";
+      if ($("maneuverSub")) $("maneuverSub").textContent = "Indoor reference coordinates established (Ready for live test)";
+      render();
+    });
+  }
 
   // Desktop view toggle (iPhone frame vs fullscreen)
   if ($("viewToggleBtn")) {
@@ -143,6 +242,9 @@ function setScenario(key) {
   document.querySelectorAll(".seg-btn, .scenario-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.scenario === key);
   });
+  if ($("liveControlsBar")) {
+    $("liveControlsBar").style.display = key === "live" ? "flex" : "none";
+  }
   if ($("tunnelProgressTag")) {
     $("tunnelProgressTag").textContent = sim.activeScenario.tunnelProgress;
   }
@@ -151,6 +253,10 @@ function setScenario(key) {
     speedSignVal.textContent = sim.activeScenario.speedLimit;
   }
   reset();
+  if (key === "live") {
+    connectLiveStream();
+    play();
+  }
 }
 
 function togglePlay() {
@@ -265,6 +371,14 @@ function updatePhysics() {
   }
 
   // Speed propagation
+  if (sc.isLive && liveSensor.active) {
+    if (liveSensor.accelMag < 0.35) {
+      targetSpeedKmph = 0.0;
+      isStopped = true;
+    } else {
+      targetSpeedKmph = Math.min(50.0, 10.0 + liveSensor.accelMag * 10.0);
+    }
+  }
   sim.speedMps = (targetSpeedKmph / 3.6);
 
   // Outage Mode State Machine
@@ -310,7 +424,10 @@ function updatePhysics() {
 
   // Heading angle for SVG vehicle chevron (drawn pointing UP):
   // When heading straight UP (ux = 0, uy = -1): angle is 0 deg.
-  const headingDeg = (Math.atan2(ux, -uy) * 180) / Math.PI;
+  let headingDeg = (Math.atan2(ux, -uy) * 180) / Math.PI;
+  if (sc.isLive && liveSensor.active && liveSensor.headingDeg !== 0) {
+    headingDeg = liveSensor.headingDeg;
+  }
 
   // Normal vector perpendicular to direction of travel (pointing right)
   const normX = -uy;

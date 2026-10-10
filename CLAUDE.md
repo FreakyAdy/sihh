@@ -14,8 +14,8 @@ This project uses zone-based ownership for multi-developer AI collaboration.
 | ml | @FreakyAdy | ml/ | IO-VNBD ingestion, preprocessing, training, evaluation, and model exports |
 | engine | @FreakyAdy | edge-engine/ | Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters |
 | mobile | @FreakyAdy | mobile/ | Smartphone sensors, on-device inference, navigation UI, and offline maps |
-| frontend | @Krushna | web-demo/ | Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas |
-| shared | @FreakyAdy | shared/, tests/, docs/, maps/, .github/, .ofa/, .cursor/, README.md/, .gitignore/, AGENTS.md/, CLAUDE.md/, GEMINI.md/, scripts/, rover/, .obsidian/, run_demo.bat, run_demo.ps1 | Main-operator-owned contracts, fixtures, CI, documentation, and map tooling |
+| frontend | @FreakyAdy | web-demo/ | Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas |
+| shared | @FreakyAdy | shared/, tests/, docs/, maps/, .github/, .ofa/, .cursor/, README.md/, .gitignore/, AGENTS.md/, CLAUDE.md/, GEMINI.md/, scripts/, rover/, .obsidian/, run_demo.bat/, run_demo.ps1/ | Main-operator-owned contracts, fixtures, CI, documentation, and map tooling |
 
 ### Rules
 

@@ -53,6 +53,28 @@ class SensorCaptureController(
     private var latestLocationReceivedNanos = 0L
     private var lastEmittedLocationNanos = 0L
     private var running = false
+    private var mockOutageActive = false
+
+    fun setManualOrigin(latitude: Double, longitude: Double) {
+        val mock = Location("manual_venue_origin").apply {
+            this.latitude = latitude
+            this.longitude = longitude
+            this.accuracy = 2.0f
+            this.time = System.currentTimeMillis()
+        }
+        latestLocation = mock
+        latestLocationReceivedNanos = SystemClock.elapsedRealtimeNanos()
+        listener.onHealthChanged("Indoor venue origin anchored ($latitude, $longitude)")
+    }
+
+    fun toggleMockOutage(active: Boolean) {
+        mockOutageActive = active
+        if (active) {
+            listener.onHealthChanged("GNSS signal cut active (Simulating tunnel outage)")
+        } else {
+            listener.onHealthChanged("GNSS signal restored")
+        }
+    }
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
@@ -148,7 +170,8 @@ class SensorCaptureController(
                 magneticFieldZ = latestMagneticField[2],
                 location = latestLocation
                     ?.takeIf {
-                        latestLocationReceivedNanos > lastEmittedLocationNanos &&
+                        !mockOutageActive &&
+                            latestLocationReceivedNanos > lastEmittedLocationNanos &&
                             SystemClock.elapsedRealtimeNanos() - latestLocationReceivedNanos <= LOCATION_FRESHNESS_NS
                     }
                     ?.also {

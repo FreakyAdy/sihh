@@ -22,6 +22,17 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        var mockOutage = false
+        // Tap position label to anchor indoor venue origin if GPS has no lock indoors
+        binding.position.setOnClickListener {
+            sensorCapture.setManualOrigin(28.6139, 77.2090)
+        }
+        // Tap mode label to simulate immediate GNSS signal cut for judges
+        binding.mode.setOnClickListener {
+            mockOutage = !mockOutage
+            sensorCapture.toggleMockOutage(mockOutage)
+        }
+
         val model = try {
             assets.open("model.json").bufferedReader().use { it.readText() }.let {
                 LinearSpeedCorrectionModel.fromJson(it)
