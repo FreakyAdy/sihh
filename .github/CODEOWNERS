@@ -12,7 +12,8 @@
 /edge-engine/    @FreakyAdy
 
 # Zone: mobile — Smartphone sensors, on-device inference, navigation UI, and offline maps
-/mobile/    @FreakyAdy
+/mobile/    @Krushna
+/idr-navigation.apk    @Krushna
 
 # Zone: frontend — Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
 /web-demo/    @Krushna
