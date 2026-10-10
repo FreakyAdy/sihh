@@ -27,7 +27,7 @@ from unavailable files.
 After downloading IO-VNBD, inspect the CSV header with:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' -c "
+python -c "
 import csv
 r = csv.DictReader(open('C:/data/io-vnbd/session.csv'))
 print(r.fieldnames)
@@ -57,7 +57,7 @@ configured columns and rejects non-monotonic timestamps.
 ```powershell
 # Step 1: Inspect CSV header and update column map
 # Step 2: Run training + evaluation pipeline
-& 'C:/Program Files/Python314/python.exe' scripts/train_io_vnbd.py `
+python scripts/train_io_vnbd.py `
     --input      C:/data/io-vnbd/session.csv `
     --columns    ml/idr_ml/io_vnbd_columns_template.json `
     --outage-seconds 60 `

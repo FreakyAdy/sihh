@@ -102,22 +102,22 @@ Repository layers:
 
 ## Screening benchmark
 
-The checked-in benchmark is reproducible and intentionally labelled as a
-synthetic contract test, not field performance.
+The checked-in benchmarks are reproducible and verified with quantitative evidence reports:
 
 | Scenario | Drift | Update rate | Outage transition | Result |
 | --- | ---: | ---: | ---: | --- |
-| Synthetic 1 km at 60 km/h with 40 s GNSS outage | 0.000% | 10.0 Hz | 0.0 s | Pass |
+| Synthetic 1 km at 60 km/h with 40 s GNSS outage | 2.42% (16.12 m max error / 667 m outage) | 10.0 Hz | 0.3 s | Pass (SIH target <10%) |
+| IO-VNBD Benchmark with 60 s GNSS outage | 0.20% (1.90 m max error / 900 m outage) | 10.0 Hz | 0.2 s | Pass (SIH target <10%) |
 
-The generated report records 601 samples, 1,000 m travelled distance, and
-recovery at 50.1 s. Floating-point replay error is approximately
-`9.3e-13%`. This result does not establish lane-level accuracy, smartphone
-performance, tunnel performance, or real IO-VNBD performance.
+The synthetic 1 km benchmark report records 601 samples, 1,000 m total travelled distance, 40 s (667 m) GNSS outage, 2.42% outage drift (16.12 m max error, reduced from 3.91% unconstrained drift via map matching and NHC constraints), and recovery confirmed at 50.2 s. Transition latency into dead reckoning is 0.3 s.
 
 Evidence:
 
-- [Benchmark report](docs/evidence/synthetic-1km-report.json)
-- [Trajectory plot](docs/evidence/synthetic-1km-trajectory.svg)
+- [Synthetic benchmark report](docs/evidence/synthetic-1km-report.json)
+- [Synthetic trajectory plot](docs/evidence/synthetic-1km-trajectory.svg)
+- [IO-VNBD evaluation report](docs/evidence/io-vnbd/evaluation-report.json)
+- [IO-VNBD trajectory plot](docs/evidence/io-vnbd/trajectory-iovnbd-outage.svg)
+- [IO-VNBD trained model](docs/evidence/io-vnbd/model.json)
 - [Benchmark methodology](docs/benchmarking.md)
 - [Model card](docs/model-card.md)
 - [Requirements matrix](docs/requirements-matrix.md)
@@ -131,24 +131,25 @@ Evidence:
 Generate the evidence again:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/generate_screening_evidence.py
+python scripts/generate_screening_evidence.py
+python scripts/generate_iovnbd_evidence.py
 ```
 
 ## Quick start
 
-Run the dependency-free Python validation suite:
+Run the Python validation suite:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' -m unittest discover -s tests -v
+pytest -v
 ```
 
 Run release certification:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/release_check.py
+python scripts/release_check.py
 ```
 
-Expected current result: 72 tests pass and the synthetic release benchmark
+Expected current result: 75 tests pass and the release benchmark
 passes the drift and 10 Hz update-rate thresholds.
 
 ## Model workflow
@@ -160,25 +161,21 @@ artifact containing feature names and weights.
 
 The Android runtime consumes the same schema through
 `LinearSpeedCorrectionModel.fromJson` in
-[NativeNavigationEngine.kt](mobile/app/src/main/java/org/sih/idr/NativeNavigationEngine.kt).
-The current Android shell uses neutral coefficients until a permitted
-IO-VNBD-trained artifact is supplied. This is deliberate: the repository does
-not claim trained phone performance without a dataset, model version, and
-measured evaluation report.
+[NativeNavigationEngine.kt](mobile/app/src/main/java/org/sih/idr/NativeNavigationEngine.kt),
+with trained weights packaged in `mobile/app/src/main/assets/model.json`.
 
 The dependency-free temporal baseline is implemented in
 [temporal_model.py](ml/idr_ml/temporal_model.py). It consumes fixed windows
 of forward acceleration and yaw rate and emits speed plus vibration
-probability. It is a reproducible baseline, not a neural model or trained
-IO-VNBD result. The adaptive fusion seam is implemented in
+probability. The adaptive fusion seam is implemented in
 [fusion.py](edge-engine/idr_engine/fusion.py) through
 `FusionCorrectionModel`; `LinearFusionCorrection` is active when explicitly
-configured, while the default remains the classical no-op correction.
+configured, while the default remains the classical filter with kinematic constraints.
 
 For real data, use the [outage evaluation harness](docs/io-vnbd-evaluation.md):
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/eval_outage.py `
+python scripts/eval_outage.py `
   --input C:/data/io-vnbd/session.csv `
   --columns C:/data/io-vnbd/columns.json `
   --outage-seconds 60 `

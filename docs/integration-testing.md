@@ -11,7 +11,7 @@ contract, fusion engine, and mobile runtime together. It covers:
 Run all scenarios with:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 ```
 
 Scenario failures must remain visible in the result. Do not convert invalid

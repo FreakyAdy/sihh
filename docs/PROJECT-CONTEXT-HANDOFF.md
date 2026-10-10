@@ -406,7 +406,7 @@ The evaluator fails closed when required evidence is absent.
 Example:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/eval_outage.py `
+python scripts/eval_outage.py `
   --input C:/data/io-vnbd/session.csv `
   --columns C:/data/io-vnbd/columns.json `
   --outage-seconds 60 `
@@ -527,19 +527,19 @@ Current verified state:
 Run tests:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' -m pytest tests -q
+pytest -q
 ```
 
 Run release certification:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/release_check.py
+python scripts/release_check.py
 ```
 
 Run throughput harness:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/measure_throughput.py `
+python scripts/measure_throughput.py `
   --samples 2000 `
   --target-hz 200
 ```

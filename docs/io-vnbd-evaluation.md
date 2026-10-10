@@ -13,7 +13,7 @@ It requires:
 Example:
 
 ```powershell
-& 'C:/Program Files/Python314/python.exe' scripts/eval_outage.py `
+python scripts/eval_outage.py `
   --input C:/data/io-vnbd/session.csv `
   --columns C:/data/io-vnbd/columns.json `
   --outage-seconds 60 `
