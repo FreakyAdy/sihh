@@ -7,6 +7,7 @@ from .scenarios import ScenarioResult, ScenarioStatus, run_scenario
 from .synthetic import straight_line_trace
 from .trace import frame_from_dict, frame_to_dict, read_jsonl, write_jsonl
 from .throughput import ThroughputReport, measure_throughput
+from .rag import IdrKnowledgeBase, IdrRagEngine, IdrRetriever, KnowledgeChunk, RagResponse
 
 __all__ = [
     "DeadReckoningReplay",
@@ -26,4 +27,9 @@ __all__ = [
     "certify_replay",
     "ThroughputReport",
     "measure_throughput",
+    "IdrKnowledgeBase",
+    "IdrRagEngine",
+    "IdrRetriever",
+    "KnowledgeChunk",
+    "RagResponse",
 ]
