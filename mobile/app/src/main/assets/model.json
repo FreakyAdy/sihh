@@ -1,0 +1,1 @@
+{"model_type":"linear_speed_correction","version":"0.1.0","feature_names":["bias","forward_acceleration_mps2","yaw_rate_rps","absolute_acceleration_mps2"],"weights":[16.419914459954487,0.049998164128501124,-0.2358497245431138,0.025992325257333613]}

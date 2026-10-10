@@ -1,0 +1,66 @@
+{
+  "dataset": "C:\\Users\\FREAKY~1\\AppData\\Local\\Temp\\tmprhwlst7p\\io_vnbd_sessions.csv",
+  "outage_seconds": 60.0,
+  "warmup_seconds": 30.0,
+  "test_sessions": [
+    "io-vnbd-eval-01"
+  ],
+  "train_sessions": [
+    "io-vnbd-train-01"
+  ],
+  "model_trained": true,
+  "classical": {
+    "window_count": 1,
+    "aggregate": {
+      "median_drift_percent": 0.1579138952169435,
+      "p90_drift_percent": 0.1579138952169435,
+      "worst_drift_percent": 0.1579138952169435,
+      "median_max_error_m": 1.5252589149253026,
+      "p90_max_error_m": 1.5252589149253026,
+      "meets_sih_target_count": 1,
+      "total_count": 1
+    },
+    "windows": [
+      {
+        "session_id": "io-vnbd-eval-01",
+        "method": "classical",
+        "outage_start_s": 30.0,
+        "outage_end_s": 90.0,
+        "outage_covered_distance_m": 965.8801163950066,
+        "truth_coverage_fraction": 1.0,
+        "drift_percent": 0.1579138952169435,
+        "max_position_error_m": 1.5252589149253026,
+        "median_position_error_m": 1.5125020454377642,
+        "p90_position_error_m": 1.5226006152904292,
+        "meets_sih_target": true
+      }
+    ]
+  },
+  "model_ridge": {
+    "window_count": 1,
+    "aggregate": {
+      "median_drift_percent": 0.19413283810286375,
+      "p90_drift_percent": 0.19413283810286375,
+      "worst_drift_percent": 0.19413283810286375,
+      "median_max_error_m": 1.87509048262887,
+      "p90_max_error_m": 1.87509048262887,
+      "meets_sih_target_count": 1,
+      "total_count": 1
+    },
+    "windows": [
+      {
+        "session_id": "io-vnbd-eval-01",
+        "method": "model_ridge",
+        "outage_start_s": 30.0,
+        "outage_end_s": 90.0,
+        "outage_covered_distance_m": 965.8801163950066,
+        "truth_coverage_fraction": 1.0,
+        "drift_percent": 0.19413283810286375,
+        "max_position_error_m": 1.87509048262887,
+        "median_position_error_m": 1.3142860181507292,
+        "p90_position_error_m": 1.8094832595971992,
+        "meets_sih_target": true
+      }
+    ]
+  }
+}

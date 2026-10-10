@@ -1,0 +1,31 @@
+{
+  "dataset": {
+    "name": "IO-VNBD",
+    "benchmark_format": "CSV",
+    "sampling_rate_hz": 10.0,
+    "vehicle_dynamics": "urban_highway_synthetic_benchmark"
+  },
+  "sessions": {
+    "train": [
+      "io-vnbd-train-01"
+    ],
+    "evaluation": [
+      "io-vnbd-eval-01"
+    ]
+  },
+  "model": {
+    "type": "linear_speed_correction",
+    "version": "0.1.0",
+    "features": [
+      "bias",
+      "forward_acceleration_mps2",
+      "yaw_rate_rps",
+      "absolute_acceleration_mps2"
+    ]
+  },
+  "evaluation": {
+    "outage_seconds": 60.0,
+    "warmup_seconds": 30.0,
+    "seed": 42
+  }
+}
