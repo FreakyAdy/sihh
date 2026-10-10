@@ -83,6 +83,14 @@ class MainActivity : AppCompatActivity() {
                     val drift = if (mockOutage) 1.9 else 0.0
                     val distanceM = (sampleCount * 0.4).coerceAtLeast(0.0)
 
+                    val ax = sample.accelerationX.toDouble()
+                    val ay = sample.accelerationY.toDouble()
+                    val az = sample.accelerationZ.toDouble()
+                    val pitchRad = kotlin.math.atan2(-ay, kotlin.math.sqrt(ax * ax + az * az))
+                    val rollRad = kotlin.math.atan2(ax, az)
+                    val isCalibrated = vehicleFrameAdapter.isConfigured()
+                    val calibStage = vehicleCalibration.stage.name
+
                     val telemetryJson = JSONObject().apply {
                         put("speedKmh", speedKmh)
                         put("headingDeg", headingDeg)
@@ -93,6 +101,10 @@ class MainActivity : AppCompatActivity() {
                         put("accX", sample.accelerationX)
                         put("accY", sample.accelerationY)
                         put("gyrZ", sample.yawRateZ)
+                        put("pitchRad", pitchRad)
+                        put("rollRad", rollRad)
+                        put("isCalibrated", isCalibrated)
+                        put("calibStage", calibStage)
                     }.toString()
 
                     runOnUiThread {

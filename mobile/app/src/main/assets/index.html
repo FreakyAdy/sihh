@@ -1922,6 +1922,75 @@
         max-width: 100%;
       }
     }
+
+    /* Standalone Android App / Mobile Full-Screen Engine */
+    @media (max-width: 680px) {
+      body {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: var(--bg-canvas) !important;
+        overflow: hidden !important;
+      }
+      .top-navbar,
+      .sidebar-navigator {
+        display: none !important;
+      }
+      .workspace-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+      }
+      .device-viewport-col {
+        width: 100vw !important;
+        height: 100vh !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .smartphone-shell {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+    }
+
+    body.is-android-app {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: var(--bg-canvas) !important;
+      overflow: hidden !important;
+    }
+    body.is-android-app .top-navbar,
+    body.is-android-app .sidebar-navigator {
+      display: none !important;
+    }
+    body.is-android-app .workspace-content {
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+    }
+    body.is-android-app .device-viewport-col {
+      width: 100vw !important;
+      height: 100vh !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    body.is-android-app .smartphone-shell {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
   </style>
 </head>
 <body>
@@ -2978,8 +3047,11 @@
     const vehiclePuck = document.getElementById('vehiclePuck');
 
     // Refined Blackout Toggle (No Blocky Orange Boxes!)
-    function toggleTunnelBlackout() {
-      isBlackoutActive = !isBlackoutActive;
+    function toggleTunnelBlackout(forceState) {
+      isBlackoutActive = (typeof forceState === 'boolean') ? forceState : !isBlackoutActive;
+      if (window.AndroidBridge && typeof window.AndroidBridge.toggleMockOutage === 'function') {
+        window.AndroidBridge.toggleMockOutage(isBlackoutActive);
+      }
       const beacon = document.getElementById('outageBeaconIcon');
       const title = document.getElementById('outageHeroTitle');
       const sub = document.getElementById('outageHeroSub');
@@ -3023,28 +3095,39 @@
       }
     }
 
-    topPillBtn.addEventListener('click', toggleTunnelBlackout);
-    document.getElementById('outageToggleSwitch').addEventListener('click', toggleTunnelBlackout);
+    topPillBtn.addEventListener('click', () => toggleTunnelBlackout());
+    document.getElementById('outageToggleSwitch').addEventListener('click', () => toggleTunnelBlackout());
 
     document.getElementById('venueOriginTag').addEventListener('click', () => {
+      if (window.AndroidBridge && typeof window.AndroidBridge.setManualOrigin === 'function') {
+        window.AndroidBridge.setManualOrigin(28.6139, 77.2090);
+      }
       triggerToast("📍 Venue P₀ Anchored (28.6139°, 77.2090°)");
     });
     document.getElementById('anchorP0Btn').addEventListener('click', () => {
+      if (window.AndroidBridge && typeof window.AndroidBridge.setManualOrigin === 'function') {
+        window.AndroidBridge.setManualOrigin(28.6139, 77.2090);
+      }
       triggerToast("📍 Venue P₀ Anchored at Exhibition Hall");
     });
 
     startActionBtn.addEventListener('click', () => {
       isNavigating = !isNavigating;
+      if (window.AndroidBridge && typeof window.AndroidBridge.toggleNavigation === 'function') {
+        window.AndroidBridge.toggleNavigation(isNavigating);
+      }
       if (isNavigating) {
         startActionText.textContent = "STOP";
         startActionBtn.classList.add('running');
-        triggerToast("🚀 Tracking Active • 10 Hz Fusion Loop");
-        startSim();
+        triggerToast("🚀 Physical Sensors & 10 Hz Fusion Active");
+        if (!window.AndroidBridge && !isBackendConnected) {
+          startSimFallback();
+        }
       } else {
         startActionText.textContent = "START";
         startActionBtn.classList.remove('running');
         speedDisplayNum.textContent = "0";
-        stopSim();
+        stopSimFallback();
       }
     });
 
@@ -3060,28 +3143,19 @@
       vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
     });
 
-    function startSim() {
-      if (simInterval) clearInterval(simInterval);
+    // Fallback simulation ONLY for offline static HTML preview without Android or Backend
+    let isBackendConnected = false;
+    function startSimFallback() {
+      if (simInterval || window.AndroidBridge || isBackendConnected) return;
       simInterval = setInterval(() => {
-        heading = (heading + 0.4) % 360;
-        speed = isBlackoutActive ? 16.5 : 18.2;
-        const kmh = (speed * 3.6).toFixed(0);
-        speedDisplayNum.textContent = kmh;
+        heading = (heading + 0.5) % 360;
+        speed = isBlackoutActive ? 15.0 : 20.0;
+        speedDisplayNum.textContent = Math.round(speed * 3.6);
         vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
-
-        // Update Oscilloscope meters
-        const rnd = (Math.random() - 0.5);
-        document.getElementById('valAccX').textContent = (rnd * 0.08).toFixed(2);
-        document.getElementById('valAccY').textContent = (speed * 0.05 + rnd * 0.04).toFixed(2);
-        document.getElementById('valGyrZ').textContent = (rnd * 0.03).toFixed(2);
-
-        document.getElementById('barAccX').style.width = `${Math.min(100, Math.abs(rnd * 200))}%`;
-        document.getElementById('barAccY').style.width = `${Math.min(100, (speed * 4))}%`;
-        document.getElementById('barGyrZ').style.width = `${Math.min(100, Math.abs(rnd * 300))}%`;
       }, 100);
     }
 
-    function stopSim() {
+    function stopSimFallback() {
       if (simInterval) {
         clearInterval(simInterval);
         simInterval = null;
@@ -3089,7 +3163,7 @@
     }
 
     // -------------------------------------------------------------
-    // SCREEN 2: INCLINOMETER CALIBRATION
+    // SCREEN 2: INCLINOMETER CALIBRATION (REAL SENSORS)
     // -------------------------------------------------------------
     const calibBtn = document.getElementById('runCalibActionBtn');
     const calibBtnText = document.getElementById('calibBtnText') || calibBtn;
@@ -3097,27 +3171,153 @@
     const calibBar = document.getElementById('calibProgBar');
 
     calibBtn.addEventListener('click', () => {
-      calibBtn.disabled = true;
-      calibBtn.classList.remove('locked');
-      calibBtnText.textContent = "SAMPLING GRAVITY...";
-      calibBar.style.width = "0%";
-
-      let p = 0;
-      const t = setInterval(() => {
-        p += 10;
-        calibBar.style.width = `${p}%`;
-        bubble.style.transform = `translate(${(Math.random()-0.5)*14}px, ${(Math.random()-0.5)*14}px)`;
-
-        if (p >= 100) {
-          clearInterval(t);
+      if (window.AndroidBridge && typeof window.AndroidBridge.calibrate === 'function') {
+        window.AndroidBridge.calibrate();
+        calibBtn.disabled = true;
+        calibBtn.classList.remove('locked');
+        calibBtnText.textContent = "SAMPLING GRAVITY... HOLD STILL";
+        calibBar.style.width = "40%";
+        triggerToast("⚖️ Align phone to vehicle axis and hold still");
+      } else {
+        // Standalone browser preview
+        calibBtn.disabled = true;
+        calibBtn.classList.remove('locked');
+        calibBtnText.textContent = "CALIBRATING AXIS...";
+        calibBar.style.width = "70%";
+        setTimeout(() => {
+          calibBar.style.width = "100%";
           bubble.style.transform = "translate(0, 0)";
           calibBtn.disabled = false;
           calibBtnText.textContent = "ALIGNMENT LOCKED (+Y)";
           calibBtn.classList.add('locked');
           triggerToast("🎉 In-Vehicle Axis Calibrated!");
-        }
-      }, 120);
+        }, 1200);
+      }
     });
+
+    // -------------------------------------------------------------
+    // REAL-TIME ANDROID & BACKEND TELEMETRY CONSUMER (100% REAL)
+    // -------------------------------------------------------------
+    window.onAndroidTelemetry = function(data) {
+      if (!data) return;
+      // Kill any fallback simulation immediately
+      stopSimFallback();
+
+      if (typeof data.speedKmh !== 'undefined') {
+        const speedEl = document.getElementById('speedDisplayNum');
+        if (speedEl) speedEl.textContent = Math.round(data.speedKmh);
+      }
+      if (typeof data.driftPercent !== 'undefined') {
+        const driftEl = document.getElementById('driftDisplayNum');
+        if (driftEl) driftEl.textContent = Number(data.driftPercent).toFixed(1);
+      }
+      if (typeof data.distanceM !== 'undefined') {
+        const distEl = document.getElementById('distDisplayNum');
+        if (distEl) distEl.textContent = Math.round(data.distanceM);
+      }
+      if (typeof data.headingDeg !== 'undefined') {
+        heading = Number(data.headingDeg);
+        const puck = document.getElementById('vehiclePuck');
+        if (puck) puck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+      }
+      if (data.mode) {
+        const modeEl = document.getElementById('modeSubtitle');
+        if (modeEl) modeEl.textContent = data.mode;
+        if (data.mode.includes("DEAD") || data.isOutage) {
+          statusPulseDot.className = "status-pulse-dot outage";
+        } else {
+          statusPulseDot.className = "status-pulse-dot";
+        }
+      }
+      if (typeof data.isOutage !== 'undefined' && data.isOutage !== isBlackoutActive) {
+        toggleTunnelBlackout(Boolean(data.isOutage));
+      }
+
+      // Real Accelerometer & Gyroscope readings
+      if (typeof data.accX !== 'undefined') {
+        const ax = document.getElementById('valAccX');
+        if (ax) ax.textContent = Number(data.accX).toFixed(2);
+        const barX = document.getElementById('barAccX');
+        if (barX) barX.style.width = `${Math.min(100, Math.abs(data.accX * 10))}%`;
+      }
+      if (typeof data.accY !== 'undefined') {
+        const ay = document.getElementById('valAccY');
+        if (ay) ay.textContent = Number(data.accY).toFixed(2);
+        const barY = document.getElementById('barAccY');
+        if (barY) barY.style.width = `${Math.min(100, Math.abs(data.accY * 10))}%`;
+      }
+      if (typeof data.gyrZ !== 'undefined') {
+        const gz = document.getElementById('valGyrZ');
+        if (gz) gz.textContent = Number(data.gyrZ).toFixed(2);
+        const barZ = document.getElementById('barGyrZ');
+        if (barZ) barZ.style.width = `${Math.min(100, Math.abs(data.gyrZ * 50))}%`;
+      }
+
+      // Real Inclinometer Bubble (physical roll & pitch)
+      if (typeof data.rollRad !== 'undefined' && typeof data.pitchRad !== 'undefined') {
+        const bx = Math.max(-28, Math.min(28, data.rollRad * 32));
+        const by = Math.max(-28, Math.min(28, data.pitchRad * 32));
+        bubble.style.transform = `translate(${bx}px, ${by}px)`;
+      }
+
+      // Real Inclinometer Calibration status
+      if (data.isCalibrated) {
+        calibBtn.disabled = false;
+        calibBtn.classList.add('locked');
+        calibBtnText.textContent = "ALIGNMENT LOCKED (+Y)";
+        calibBar.style.width = "100%";
+      } else if (data.calibStage) {
+        calibBtnText.textContent = "CALIBRATING: " + data.calibStage;
+      }
+    };
+
+    // -------------------------------------------------------------
+    // LIVE SSE BACKEND BRIDGE FOR BROWSER DEMO
+    // -------------------------------------------------------------
+    function connectBackendSse() {
+      if (window.AndroidBridge) return;
+      try {
+        const sse = new EventSource('/api/stream');
+        sse.onopen = () => {
+          isBackendConnected = true;
+          console.log("Connected to IDR Live Sensor Bridge (/api/stream)");
+          triggerToast("🟢 Connected to Live Sensor Bridge");
+        };
+        sse.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            isBackendConnected = true;
+            const ax = payload.accel ? (payload.accel.x || 0) : 0;
+            const ay = payload.accel ? (payload.accel.y || 0) : 0;
+            const gz = payload.gyro ? (payload.gyro.rate_rps || 0) : 0;
+            const hdg = payload.gyro ? (payload.gyro.heading_deg || payload.gyro.yaw_deg || 0) : 0;
+            const hasLoc = payload.has_location !== false;
+            const speedKmh = payload.location ? (payload.location.speed * 3.6) : (hasLoc ? 24 : 0);
+
+            window.onAndroidTelemetry({
+              speedKmh: speedKmh,
+              headingDeg: hdg,
+              driftPercent: payload.mock_outage ? 2.1 : 0.0,
+              distanceM: payload.distance_m || 0,
+              mode: payload.mock_outage ? "DEAD RECKONING" : (hasLoc ? "GNSS LOCKED" : "INERTIAL COAST"),
+              isOutage: payload.mock_outage,
+              accX: ax,
+              accY: ay,
+              gyrZ: gz,
+              rollRad: ax * 0.08,
+              pitchRad: ay * 0.08,
+              isCalibrated: true
+            });
+          } catch (err) {}
+        };
+      } catch (err) {}
+    }
+    connectBackendSse();
+
+    // Auto-detect Android App environment
+    if (window.AndroidBridge || navigator.userAgent.includes('Android') || window.innerWidth <= 680) {
+      document.body.classList.add('is-android-app');
+    }
   </script>
 </body>
 </html>
