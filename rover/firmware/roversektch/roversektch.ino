@@ -346,9 +346,12 @@ void handle_telemetry() {
     server.send(200, "application/json", json);
 }
 
+unsigned long last_web_cmd_ms = 0;
+
 void handle_command() {
     if (server.hasArg("cmd")) {
         String cmd = server.arg("cmd");
+        last_web_cmd_ms = millis();
         if (cmd == "forward") skid_steer(180, 180);
         else if (cmd == "reverse") skid_steer(-180, -180);
         else if (cmd == "left") skid_steer(-180, 180);
@@ -395,6 +398,9 @@ void setup() {
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP("AgYaan_Rover_AP", "isro2026");
 
+    // Optional: Connect to external Wi-Fi / Hotspot (uncomment to connect to venue router)
+    // WiFi.begin("YOUR_WIFI_SSID", "YOUR_WIFI_PASSWORD");
+
     // Initialize ESP-NOW
     if (esp_now_init() == ESP_OK) {
         esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
@@ -408,7 +414,11 @@ void setup() {
 
     Serial.println("=================================================");
     Serial.println("  🚀 AgYaan Autonomous Lunar Rover Ready");
-    Serial.println("  IP: " + WiFi.softAPIP().toString());
+    Serial.println("  SoftAP SSID : AgYaan_Rover_AP (Pass: isro2026)");
+    Serial.println("  SoftAP IP   : " + WiFi.softAPIP().toString());
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("  Station IP  : " + WiFi.localIP().toString());
+    }
     Serial.println("=================================================");
 }
 
@@ -418,8 +428,8 @@ void loop() {
     update_imu();
     update_odometry();
 
-    // Failsafe watchdog: Stop motors if remote drops out in manual mode
-    if (current_mode == MODE_MANUAL && millis() - last_remote_rx_ms > 1500) {
+    // Failsafe watchdog: Stop motors if neither remote nor web command has been received in 1500ms
+    if (current_mode == MODE_MANUAL && (millis() - last_remote_rx_ms > 1500) && (millis() - last_web_cmd_ms > 1500)) {
         stop_motors();
     }
 
