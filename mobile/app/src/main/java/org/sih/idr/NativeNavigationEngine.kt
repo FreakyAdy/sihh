@@ -78,7 +78,7 @@ class LinearSpeedCorrectionModel(
 
 class NativeNavigationEngine(
     private val speedModel: SpeedCorrectionModel = LinearSpeedCorrectionModel(),
-    private val outageConfirmSeconds: Double = 0.2,
+    private val outageConfirmSeconds: Double = 1.5,
     private val recoveryConfirmCount: Int = 2,
     private val confidenceDecaySeconds: Double = 60.0,
 ) {
@@ -120,7 +120,9 @@ class NativeNavigationEngine(
         require(dt <= MAX_INTERVAL_SECONDS) { "sample timestamp gap exceeds engine limit" }
         lastTimestampSeconds = sample.timestampSeconds
 
-        headingRad += sample.yawRateRps * dt
+        // Negate yaw rate: clockwise heading increases in NEU coordinates,
+        // while Android upright gyro produces negative yaw rate on a right turn.
+        headingRad -= sample.yawRateRps * dt
         val modelSpeed = speedModel.predictSpeed(
             sample.forwardAccelerationMps2,
             sample.yawRateRps,
@@ -157,13 +159,22 @@ class NativeNavigationEngine(
             yMeters = 0.0
             if (location.hasBearing()) headingRad = Math.toRadians(location.bearing.toDouble())
             mode = NativeNavigationMode.GNSS_AIDED
-            recoveryCount = recoveryConfirmCount
+            recoveryCount = 0
             outageStartSeconds = null
         } else {
             if (mode == NativeNavigationMode.DEAD_RECKONING) {
                 recoveryCount += 1
                 if (recoveryCount >= recoveryConfirmCount) {
-                    projectLocation(location)
+                    val reference = origin
+                    if (reference != null) {
+                        val distance = reference.distanceTo(location).toDouble()
+                        val bearing = Math.toRadians(reference.bearingTo(location).toDouble())
+                        val targetX = distance * cos(bearing)
+                        val targetY = distance * sin(bearing)
+                        // Smooth position recovery
+                        xMeters += (targetX - xMeters) * 0.5
+                        yMeters += (targetY - yMeters) * 0.5
+                    }
                     mode = NativeNavigationMode.GNSS_AIDED
                     outageStartSeconds = null
                     recoveryCount = 0
@@ -172,14 +183,23 @@ class NativeNavigationEngine(
                 projectLocation(location)
                 mode = NativeNavigationMode.GNSS_AIDED
                 outageStartSeconds = null
+                recoveryCount = 0
             }
         }
         if (location.hasSpeed()) speedMps = max(0.0, location.speed.toDouble())
+        if (location.hasBearing() && location.hasSpeed() && location.speed >= 2.5f) {
+            val targetHeading = Math.toRadians(location.bearing.toDouble())
+            val diff = Math.atan2(sin(targetHeading - headingRad), cos(targetHeading - headingRad))
+            headingRad += diff * 0.15
+        }
     }
 
     private fun handleMissingGnss(timestampSeconds: Double) {
         val lastFixTime = lastGnssTimestampSeconds ?: return
         val elapsed = timestampSeconds - lastFixTime
+        if (elapsed >= maxOf(outageConfirmSeconds * 2.0, 2.5)) {
+            recoveryCount = 0
+        }
         if (elapsed >= outageConfirmSeconds) {
             if (outageStartSeconds == null) {
                 outageStartSeconds = lastFixTime
