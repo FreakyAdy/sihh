@@ -13,7 +13,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sensorCapture: SensorCaptureController
     private val vehicleFrameAdapter = VehicleFrameAdapter()
     private val vehicleCalibration = VehicleCalibration()
-    private val navigationEngine = NativeNavigationEngine()
+    private var navigationEngine = NativeNavigationEngine()
     private var sampleCount = 0L
     private var lastUiUpdateMillis = 0L
 
@@ -21,6 +21,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val model = try {
+            assets.open("model.json").bufferedReader().use { it.readText() }.let {
+                LinearSpeedCorrectionModel.fromJson(it)
+            }
+        } catch (_: Exception) {
+            LinearSpeedCorrectionModel()
+        }
+        navigationEngine = NativeNavigationEngine(speedModel = model)
 
         sensorCapture = SensorCaptureController(
             this,
@@ -36,43 +45,55 @@ class MainActivity : AppCompatActivity() {
                             rollRad = calibrationResult.rollRad,
                         )
                     }
+
+                    // Always process every IMU sample through the navigation engine
+                    var estimate: NativeNavigationEstimate? = null
+                    var errorMsg: String? = null
+                    try {
+                        if (vehicleFrameAdapter.isConfigured()) {
+                            estimate = navigationEngine.update(vehicleFrameAdapter.adapt(sample))
+                        }
+                    } catch (error: IllegalArgumentException) {
+                        errorMsg = "rejected sensor sample (${error.message})"
+                    } catch (error: IllegalStateException) {
+                        errorMsg = "navigation unavailable (${error.message})"
+                    }
+
+                    // Only throttle the UI layout updates to 10 Hz
                     val now = android.os.SystemClock.elapsedRealtime()
                     if (now - lastUiUpdateMillis < 100L) {
                         return
                     }
                     lastUiUpdateMillis = now
 
-                    var positionText: String
-                    var modeText: String
+                    val currentEstimate = estimate
+                    val positionText: String
+                    val modeText: String
                     var diagnostic = "Diagnostics: $sampleCount samples received (10 Hz display)"
 
-                    try {
-                        if (vehicleFrameAdapter.isConfigured()) {
-                            val estimate = navigationEngine.update(vehicleFrameAdapter.adapt(sample))
-                            positionText = estimate.latitude?.let { latitude ->
-                                "Position: %.5f, %.5f".format(latitude, estimate.longitude)
-                            } ?: "Position: waiting for GNSS origin"
-                            modeText = "Mode: ${estimate.mode.name.replace('_', ' ')} (confidence %.2f)".format(estimate.confidence)
-                        } else {
-                            positionText = sample.location?.let {
-                                "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
-                            } ?: "GNSS: waiting for fix"
-                            modeText = "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
-                        }
-                    } catch (error: IllegalArgumentException) {
+                    if (errorMsg != null) {
                         positionText = "Position: error"
                         modeText = "Mode: Error"
-                        diagnostic = "Diagnostics: rejected sensor sample (${error.message})"
-                    } catch (error: IllegalStateException) {
-                        positionText = "Position: unavailable"
-                        modeText = "Mode: Error"
-                        diagnostic = "Diagnostics: navigation unavailable (${error.message})"
+                        diagnostic = "Diagnostics: $errorMsg"
+                    } else if (currentEstimate != null) {
+                        positionText = currentEstimate.latitude?.let { latitude ->
+                            "Position: %.5f, %.5f".format(latitude, currentEstimate.longitude)
+                        } ?: "Position: waiting for GNSS origin"
+                        modeText = "Mode: ${currentEstimate.mode.name.replace('_', ' ')} (confidence %.2f)".format(currentEstimate.confidence)
+                    } else {
+                        positionText = sample.location?.let {
+                            "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
+                        } ?: "GNSS: waiting for fix"
+                        modeText = "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
                     }
+
+                    val headingDeg = currentEstimate?.let { Math.toDegrees(it.headingRad).toFloat() } ?: 0f
 
                     runOnUiThread {
                         binding.position.text = positionText
                         binding.mode.text = modeText
                         binding.diagnostics.text = diagnostic
+                        binding.vehicleMarker.rotation = headingDeg
                     }
                 }
 
