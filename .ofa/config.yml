@@ -20,7 +20,7 @@ zones:
       - idr-navigation.apk/
     owner: Krushna
     description: Smartphone sensors, on-device inference, navigation UI, and offline maps
-    claimed_at: '2026-10-10T19:42:39.409Z'
+    claimed_at: '2026-10-10T20:04:54.176Z'
   frontend:
     paths:
       - web-demo/
@@ -81,6 +81,6 @@ locks:
     ttl_hours: 24
   - zone: mobile
     owner: Krushna
-    claimed_at: '2026-10-10T19:42:39.409Z'
-    expires_at: '2026-10-11T19:42:39.410Z'
+    claimed_at: '2026-10-10T20:04:54.176Z'
+    expires_at: '2026-10-11T20:04:54.177Z'
     ttl_hours: 24

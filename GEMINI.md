@@ -23,7 +23,7 @@ that your developer has claimed.
 - Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
 
 ### mobile — 🔴 Claimed by **@Krushna**
-- Paths: `mobile/`, `idr-navigation.apk`
+- Paths: `mobile/`, `idr-navigation.apk/`
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
 ### frontend — 🔴 Claimed by **@Krushna**
