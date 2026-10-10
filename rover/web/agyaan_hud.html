@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>AgYaan — Autonomous Lunar Exploration Rover Mission Control</title>
+  <link rel="stylesheet" href="agyaan_hud.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Mission Control Navigation Bar -->
+  <header class="mission-header">
+    <div class="brand-section">
+      <div class="isro-insignia">🚀</div>
+      <div class="brand-text">
+        <h1>AgYaan <span>LUNAR EXPLORATION</span> MISSION CONTROL</h1>
+        <div class="brand-sub">ISRO PS 26168 • ZERO-GNSS EXTRATERRESTRIAL PROVING GROUND</div>
+      </div>
+    </div>
+
+    <!-- The Presentation Pivot Switcher -->
+    <nav class="domain-switcher-bar" aria-label="Mission domain selector">
+      <button class="domain-tab active" id="tabLunar" title="Extraterrestrial Autonomous Rover Proving Ground">
+        <span>🌕</span> AgYaan Lunar Rover
+      </button>
+      <a href="index.html" class="domain-tab earth-tab" id="tabEarth" title="Switch to Terrestrial Civilian Vehicle Navigation (PS 26168)">
+        <span>🌍</span> Earth Vehicle Nav (PS 26168)
+      </a>
+      <button class="domain-tab" id="openArchModalBtn" title="View Unified Mathematical Core Architecture">
+        <span>📐</span> Unified Architecture
+      </button>
+    </nav>
+
+    <div class="header-status-group">
+      <div class="status-tag" id="connStatusTag">
+        <span class="status-dot"></span>
+        <span id="connStatusText">SIMULATED TESTBED</span>
+      </div>
+      <div class="status-tag" style="color: var(--cyan-neon); border-color: rgba(56, 189, 248, 0.3);">
+        <span>⚡ 15 Hz FUSION</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Mission Control Grid -->
+  <main class="hud-grid">
+
+    <!-- Left Column: Dual Haz-Cams & Perception -->
+    <aside class="hud-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>📷</span> STEREOSCOPIC HAZ-CAMS
+        </div>
+        <span class="panel-badge">120 mm BASELINE</span>
+      </div>
+
+      <div class="cams-vertical-deck">
+        <!-- Port Haz-Cam -->
+        <div class="cam-tile" id="portCamTile">
+          <canvas id="portSimCanvas" width="320" height="200"></canvas>
+          <div class="cam-header-overlay">
+            <span class="cam-name-pill">PORT HAZ-CAM (LEFT)</span>
+            <span class="cam-live-indicator">LIVE</span>
+          </div>
+          <div class="cam-hud-crosshairs"></div>
+        </div>
+
+        <!-- Starboard Haz-Cam -->
+        <div class="cam-tile" id="starCamTile">
+          <canvas id="starSimCanvas" width="320" height="200"></canvas>
+          <div class="cam-header-overlay">
+            <span class="cam-name-pill">STARBOARD HAZ-CAM (RIGHT)</span>
+            <span class="cam-live-indicator">LIVE</span>
+          </div>
+          <div class="cam-hud-crosshairs"></div>
+        </div>
+      </div>
+
+      <!-- Camera IP Configuration Bar -->
+      <div class="cam-ip-bar">
+        <input type="text" id="portCamIp" class="cam-ip-input" placeholder="Port IP (e.g. 192.168.204.228:81)" value="192.168.204.228:81">
+        <button id="connectCamsBtn" class="cam-ip-btn">Connect</button>
+      </div>
+
+      <!-- Perception Metadata -->
+      <div class="metric-card accent">
+        <div class="metric-header">PERCEPTION PIPELINE</div>
+        <div class="metric-sub" style="color: #fff; font-size: 11px; margin-top: 4px;">
+          • Semi-Global Block Matching (StereoSGBM)<br>
+          • 3D Point Cloud Depth Transformation<br>
+          • Non-Blocking Autonomous Obstacle Profiling
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Column: 3D Isometric Lunar Hazard Canvas -->
+    <section class="hud-panel center-viewport">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🌐</span> ISOMETRIC 3D LUNAR SURFACE HAZARD MAP
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span class="panel-badge" style="color: var(--amber-neon); border-color: rgba(245, 158, 11, 0.3);">TF-LiDAR RAYCAST ACTIVE</span>
+          <span class="panel-badge" id="autoStatusBadge">MODE: MANUAL</span>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="iso3dCanvas" width="800" height="520"></canvas>
+
+        <div class="canvas-overlay-hud">
+          <div class="hazard-alert-banner" id="hazardAlertBanner">
+            <span style="font-size: 20px;">⚠️</span>
+            <div>
+              <div style="font-weight: 800; font-size: 13px;">TERRAIN HAZARD DETECTED &lt; 30 cm</div>
+              <div style="font-size: 10px; font-family: var(--font-mono);">Executing Autonomous Scan-and-Bypass Protocol</div>
+            </div>
+          </div>
+
+          <div class="canvas-stats-pill">
+            ODOM POSE: <strong id="poseReadout">X: 0.0 cm | Y: 0.0 cm | YAW: 0.0°</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Telemetry & Control Deck -->
+    <aside class="hud-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>📊</span> TELEMETRY GAUGES
+        </div>
+        <span class="panel-badge" id="packetCountBadge">100% HEALTH</span>
+      </div>
+
+      <!-- Telemetry Metric Grid -->
+      <div class="telemetry-grid">
+        <div class="metric-card hazard-card">
+          <div class="metric-header">TF-LiDAR RANGE</div>
+          <div class="metric-value-row">
+            <span class="metric-number" id="valLidarDist">85</span>
+            <span class="metric-unit">cm</span>
+          </div>
+          <div class="metric-sub" id="valLidarStatus">Clear Ahead (&gt;30 cm)</div>
+        </div>
+
+        <div class="metric-card accent">
+          <div class="metric-header">MPU6050 HEADING</div>
+          <div class="metric-value-row">
+            <span class="metric-number" id="valHeading">0.0</span>
+            <span class="metric-unit">deg</span>
+          </div>
+          <div class="metric-sub" id="valGyroRate">Rate: 0.0 °/s</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">LEFT ENCODER</div>
+          <div class="metric-value-row">
+            <span class="metric-number" id="valTicksL">0</span>
+            <span class="metric-unit">ticks</span>
+          </div>
+          <div class="metric-sub">330 PPR • 6.5cm Wheel</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">RIGHT ENCODER</div>
+          <div class="metric-value-row">
+            <span class="metric-number" id="valTicksR">0</span>
+            <span class="metric-unit">ticks</span>
+          </div>
+          <div class="metric-sub">330 PPR • 6.5cm Wheel</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">LINEAR SPEED</div>
+          <div class="metric-value-row">
+            <span class="metric-number" id="valSpeed">0.0</span>
+            <span class="metric-unit">cm/s</span>
+          </div>
+          <div class="metric-sub" id="valZuptTag">ZUPT Active</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">BATTERY / LINK</div>
+          <div class="metric-value-row">
+            <span class="metric-number" id="valBatt">11.8</span>
+            <span class="metric-unit">V</span>
+          </div>
+          <div class="metric-sub" id="valRssi">-42 dBm (ESP-NOW)</div>
+        </div>
+      </div>
+
+      <!-- Teleoperation & Autonomous Controls Deck -->
+      <div class="panel-header" style="margin-top: 6px;">
+        <div class="panel-title">
+          <span>🕹️</span> LOCOMOTION CONTROL
+        </div>
+        <div class="source-toggle-bar" style="max-width: 160px;">
+          <button class="source-btn active" id="srcSimBtn">Simulation</button>
+          <button class="source-btn" id="srcLiveBtn">Live ESP32</button>
+        </div>
+      </div>
+
+      <div class="teleop-deck">
+        <button class="hud-btn" id="btnFwd">▲ FORWARD</button>
+        <div class="dpad-row">
+          <button class="hud-btn" id="btnLeft">◀ PIVOT L</button>
+          <button class="hud-btn halt-btn" id="btnStop">■ HALT</button>
+          <button class="hud-btn" id="btnRight">PIVOT R ▶</button>
+        </div>
+        <button class="hud-btn" id="btnRev">▼ REVERSE</button>
+        <button class="hud-btn auto-btn" id="btnToggleAuto">⚡ AUTONOMOUS (SCAN &amp; BYPASS)</button>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">HARDWARE SURVIVABILITY NOTE</div>
+        <div class="metric-sub" style="line-height: 1.4; color: #cbd5e1;">
+          Custom CAD chassis with 90+ hours internal cellular additive infill. ESP32 dual-core distributed processing with non-blocking UART LiDAR frame extraction.
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Unified Mathematical Core Architecture Modal -->
+  <div class="arch-modal-overlay" id="archModal">
+    <div class="arch-modal-card">
+      <div class="modal-header-row">
+        <div class="modal-title">📐 Universal Intelligent Dead Reckoning Core Architecture</div>
+        <button class="modal-close-btn" id="closeArchModalBtn">&times;</button>
+      </div>
+
+      <p style="color: var(--text-muted); font-size: 13px; line-height: 1.5;">
+        Intelligent Dead Reckoning (IDR) is the universal science of tracking motion when satellite positioning does not exist. 
+        Both the <strong>AgYaan Lunar Exploration Rover</strong> and the <strong>ISRO PS 26168 Vehicle Navigation Platform</strong> run 
+        the exact same mathematical core adapted for their respective deployment constraints:
+      </p>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Fusion Element</th>
+            <th>🌕 Extraterrestrial Domain (AgYaan Rover)</th>
+            <th>🌍 Terrestrial Domain (IDR Vehicle Nav - PS 26168)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>GNSS Environment</strong></td>
+            <td>100% Zero-GNSS (Moon has no satellite constellation)</td>
+            <td>Intermittent Outages (Himalayan tunnels, canyons, jamming)</td>
+          </tr>
+          <tr>
+            <td><strong>Kinematic Constraints</strong></td>
+            <td>Non-Holonomic Skid-Steer with Wheel Slip Compensation</td>
+            <td>Non-Holonomic Road Constraint ($v_{\text{lateral}} = 0$)</td>
+          </tr>
+          <tr>
+            <td><strong>Drift Suppression</strong></td>
+            <td>Zero Velocity Update (ZUPT) during stationary hazard profiling</td>
+            <td>ZUPT clamping during tunnel traffic standstill</td>
+          </tr>
+          <tr>
+            <td><strong>Heading Tracking</strong></td>
+            <td>MPU6050 Gyro integration with static bias cancellation</td>
+            <td>Continuous zero-bias gyro estimation ($&lt;2.70\%$ drift)</td>
+          </tr>
+          <tr>
+            <td><strong>Surfacing / Map Matching</strong></td>
+            <td>TF-LiDAR 3D point cloud &amp; obstacle flank evasion</td>
+            <td>OpenStreetMap HMM segment projection &amp; Ridge ML speed model</td>
+          </tr>
+          <tr>
+            <td><strong>Target Performance</strong></td>
+            <td>Autonomous 30 cm scan-and-bypass collision avoidance</td>
+            <td>Verified 2.42% drift over 1 km (&lt;10% SIH benchmark)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <a href="index.html" class="hud-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: #0284c7; color: #fff;">
+          <span>🌍</span> Launch Earth Vehicle Nav Demo
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="agyaan_hud.js"></script>
+</body>
+</html>

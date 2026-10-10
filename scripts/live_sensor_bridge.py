@@ -34,6 +34,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WEB_DEMO_DIR = REPO_ROOT / "web-demo"
+ROVER_WEB_DIR = REPO_ROOT / "rover" / "web"
 
 # Global client subscribers for SSE stream
 SUBSCRIBERS: list[queue.Queue] = []
@@ -171,9 +172,101 @@ class LiveBridgeHandler(SimpleHTTPRequestHandler):
                 "latest_timestamp": LATEST_STATE.get("timestamp"),
                 "has_location": LATEST_STATE.get("has_location"),
             }).encode("utf-8"))
+        elif parsed.path in ("/", "/rover", "/agyaan", "/agyaan_hud.html"):
+            hud_path = ROVER_WEB_DIR / "agyaan_hud.html"
+            data = hud_path.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        elif parsed.path == "/agyaan_hud.css":
+            css_path = ROVER_WEB_DIR / "agyaan_hud.css"
+            data = css_path.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/css; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        elif parsed.path == "/agyaan_hud.js":
+            js_path = ROVER_WEB_DIR / "agyaan_hud.js"
+            data = js_path.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        elif parsed.path in ("/earth", "/earth.html"):
+            earth_path = WEB_DEMO_DIR / "index.html"
+            data = earth_path.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        elif parsed.path in ("/idr-navigation.apk", "/download/apk", "/app.apk"):
+            apk_path = REPO_ROOT / "idr-navigation.apk"
+            if not apk_path.is_file():
+                apk_path = REPO_ROOT / "mobile" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+            if apk_path.is_file():
+                data = apk_path.read_bytes()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/vnd.android.package-archive")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Content-Disposition", 'attachment; filename="idr-navigation.apk"')
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self.send_response(HTTPStatus.NOT_FOUND)
+                self.end_headers()
+                self.wfile.write(b"APK not found")
         else:
             # Serve regular static files from web-demo/
             super().do_GET()
+
+    def do_HEAD(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path in ("/", "/rover", "/agyaan", "/agyaan_hud.html"):
+            hud_path = ROVER_WEB_DIR / "agyaan_hud.html"
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(hud_path.stat().st_size))
+            self.end_headers()
+        elif parsed.path == "/agyaan_hud.css":
+            css_path = ROVER_WEB_DIR / "agyaan_hud.css"
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/css; charset=utf-8")
+            self.send_header("Content-Length", str(css_path.stat().st_size))
+            self.end_headers()
+        elif parsed.path == "/agyaan_hud.js":
+            js_path = ROVER_WEB_DIR / "agyaan_hud.js"
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(js_path.stat().st_size))
+            self.end_headers()
+        elif parsed.path in ("/earth", "/earth.html"):
+            earth_path = WEB_DEMO_DIR / "index.html"
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(earth_path.stat().st_size))
+            self.end_headers()
+        elif parsed.path in ("/idr-navigation.apk", "/download/apk", "/app.apk"):
+            apk_path = REPO_ROOT / "idr-navigation.apk"
+            if not apk_path.is_file():
+                apk_path = REPO_ROOT / "mobile" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+            if apk_path.is_file():
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/vnd.android.package-archive")
+                self.send_header("Content-Length", str(apk_path.stat().st_size))
+                self.send_header("Content-Disposition", 'attachment; filename="idr-navigation.apk"')
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+            else:
+                self.send_response(HTTPStatus.NOT_FOUND)
+                self.end_headers()
+        else:
+            super().do_HEAD()
 
     def do_OPTIONS(self) -> None:
         """Handles CORS preflight requests."""
@@ -197,18 +290,18 @@ def main() -> None:
     server = ThreadingHTTPServer(("0.0.0.0", port), LiveBridgeHandler)
 
     print("=" * 65)
-    print("  🚀 IDR LIVE SENSOR BRIDGE — REAL-DEVICE JUDGE DEMO")
+    print("  🚀 IDR DUAL-DOMAIN MISSION CONTROL — LIVE DEMO")
     print("=" * 65)
-    print(f"  💻 Laptop Dashboard URL : http://localhost:{port}/index.html")
-    print(f"  📱 Phone Streamer URL    : http://{local_ip}:{port}/phone-streamer.html")
+    print(f"  🌕 AgYaan Lunar Rover HUD  : http://localhost:{port}/")
+    print(f"  🌍 Earth Vehicle Nav (PS)  : http://localhost:{port}/index.html")
+    print(f"  📲 Install Android APK     : http://{local_ip}:{port}/idr-navigation.apk")
+    print(f"  📱 Phone Web Streamer      : http://{local_ip}:{port}/phone-streamer.html")
     print("=" * 65)
     print("  HOW TO RUN THE LIVE DEMO WITH THE JUDGE:")
-    print("  1. Connect your phone to the same Wi-Fi as this laptop.")
-    print(f"  2. Open on phone: http://{local_ip}:{port}/phone-streamer.html")
-    print("  3. Tap 'Start Streaming' and grant sensor/location permissions.")
-    print("  4. Show the judge: When physical location is turned OFF on the phone,")
-    print("     the laptop dashboard transitions instantly to DEAD RECKONING,")
-    print("     tracking the phone's physical motion in real time!")
+    print("  1. Presenter default: Open http://localhost:8080/ for AgYaan 3D Rover HUD.")
+    print("  2. When judges ask about Problem Statement 26168 / road vehicles:")
+    print("     Click 'Earth Vehicle Nav (PS 26168)' in the top bar to show 1km tunnel outage!")
+    print("  3. On phone over Wi-Fi, download APK: http://{local_ip}:{port}/idr-navigation.apk")
     print("=" * 65)
     print("Press Ctrl+C to stop the bridge server.\n")
 

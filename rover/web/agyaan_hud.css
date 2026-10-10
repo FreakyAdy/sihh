@@ -1,0 +1,651 @@
+/* =========================================================================
+ *  AgYaan Command HUD — Stylesheet
+ *  High-Fidelity Space Mission Control Theme
+ * ========================================================================= */
+
+:root {
+  --bg-space: #060913;
+  --bg-card: rgba(13, 20, 36, 0.88);
+  --bg-card-hover: rgba(20, 32, 58, 0.95);
+  --border-neon: rgba(56, 189, 248, 0.25);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --cyan-neon: #38bdf8;
+  --cyan-glow: rgba(56, 189, 248, 0.35);
+  --amber-neon: #f59e0b;
+  --amber-glow: rgba(245, 158, 11, 0.35);
+  --green-neon: #10b981;
+  --red-neon: #ef4444;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-space);
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  color: var(--text-main);
+  min-height: 100vh;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* -------------------------------------------------------------------------
+ * Top Mission Control Navigation Bar
+ * ------------------------------------------------------------------------- */
+.mission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-neon);
+  border-radius: 16px;
+  padding: 12px 20px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.isro-insignia {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+}
+
+.brand-text h1 {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-text h1 span {
+  color: var(--cyan-neon);
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+
+/* Domain Switcher Pill (The Presentation Secret Weapon) */
+.domain-switcher-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 4px;
+  border-radius: 30px;
+  gap: 4px;
+}
+
+.domain-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 24px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.domain-tab:hover {
+  color: #fff;
+}
+
+.domain-tab.active {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(2, 132, 199, 0.45);
+}
+
+.domain-tab.earth-tab:hover {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--green-neon);
+}
+
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green-neon);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green-neon);
+  box-shadow: 0 0 8px var(--green-neon);
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* -------------------------------------------------------------------------
+ * Main 3-Column Mission Control Grid
+ * ------------------------------------------------------------------------- */
+.hud-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr 340px;
+  gap: 14px;
+  flex: 1;
+}
+
+@media (max-width: 1200px) {
+  .hud-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hud-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-neon);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--cyan-neon);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--cyan-neon);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+/* -------------------------------------------------------------------------
+ * Dual Haz-Cams Video Monitor Tiles
+ * ------------------------------------------------------------------------- */
+.cams-vertical-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cam-tile {
+  background: #000;
+  border: 1px solid var(--border-neon);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 16 / 10;
+}
+
+.cam-tile video, .cam-tile img, .cam-tile canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cam-header-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.cam-name-pill {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--cyan-neon);
+}
+
+.cam-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.85);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.cam-hud-crosshairs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, transparent 38px, rgba(56, 189, 248, 0.08) 40px, transparent 42px),
+    linear-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.15) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
+.cam-hud-crosshairs::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid var(--cyan-neon);
+  border-radius: 50%;
+}
+
+.cam-ip-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.cam-ip-input {
+  flex: 1;
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #fff;
+}
+
+.cam-ip-btn {
+  background: #1e293b;
+  border: 1px solid var(--border-neon);
+  color: var(--cyan-neon);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* -------------------------------------------------------------------------
+ * Center 3D Isometric Lunar Hazard Canvas
+ * ------------------------------------------------------------------------- */
+.center-viewport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-container {
+  flex: 1;
+  min-height: 440px;
+  background: radial-gradient(circle at center, #0e172a 0%, #030712 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+#iso3dCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvas-overlay-hud {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.hazard-alert-banner {
+  background: rgba(239, 68, 68, 0.9);
+  border: 1px solid #f87171;
+  padding: 8px 14px;
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.6);
+  animation: alertPulse 1.2s infinite;
+}
+
+.hazard-alert-banner.active {
+  display: flex;
+}
+
+@keyframes alertPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+.canvas-stats-pill {
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid var(--border-neon);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.canvas-stats-pill strong {
+  color: var(--cyan-neon);
+}
+
+/* -------------------------------------------------------------------------
+ * Right Panel: Telemetry Grid & Control Deck
+ * ------------------------------------------------------------------------- */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.metric-card {
+  background: rgba(2, 6, 23, 0.65);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card.accent {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(2, 6, 23, 0.85);
+}
+
+.metric-card.hazard-card {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.metric-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.metric-number {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #fff;
+}
+
+.metric-unit {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.metric-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+}
+
+/* D-Pad Teleoperation Deck */
+.teleop-deck {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dpad-row {
+  display: flex;
+  gap: 8px;
+}
+
+.hud-btn {
+  background: #1e293b;
+  color: #fff;
+  border: 1px solid #334155;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.hud-btn:hover {
+  background: #334155;
+  border-color: var(--cyan-neon);
+}
+
+.hud-btn:active {
+  background: var(--cyan-neon);
+  color: #000;
+  transform: scale(0.95);
+}
+
+.hud-btn.halt-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--red-neon);
+  color: var(--red-neon);
+}
+
+.hud-btn.halt-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.hud-btn.auto-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--green-neon);
+  color: var(--green-neon);
+  width: 100%;
+  margin-top: 4px;
+}
+
+.hud-btn.auto-btn:hover {
+  background: rgba(16, 185, 129, 0.35);
+}
+
+.source-toggle-bar {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.source-btn {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.source-btn.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: var(--cyan-neon);
+  color: var(--cyan-neon);
+}
+
+/* -------------------------------------------------------------------------
+ * Unified Architecture Modal
+ * ------------------------------------------------------------------------- */
+.arch-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.arch-modal-overlay.open {
+  display: flex;
+}
+
+.arch-modal-card {
+  background: #0b1120;
+  border: 1px solid var(--border-neon);
+  border-radius: 20px;
+  max-width: 820px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--cyan-neon);
+}
+
+.modal-close-btn {
+  background: #1e293b;
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.comparison-table th, .comparison-table td {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.comparison-table th {
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--cyan-neon);
+  font-weight: 800;
+}
+
+.comparison-table td strong {
+  color: #fff;
+}
