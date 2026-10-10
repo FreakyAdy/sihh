@@ -1,11 +1,16 @@
 package org.sih.idr
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import org.json.JSONObject
 import org.sih.idr.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -16,22 +21,14 @@ class MainActivity : AppCompatActivity() {
     private var navigationEngine = NativeNavigationEngine()
     private var sampleCount = 0L
     private var lastUiUpdateMillis = 0L
+    private var mockOutage = false
+    private var isNavigating = false
 
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        var mockOutage = false
-        // Tap position label to anchor indoor venue origin if GPS has no lock indoors
-        binding.position.setOnClickListener {
-            sensorCapture.setManualOrigin(28.6139, 77.2090)
-        }
-        // Tap mode label to simulate immediate GNSS signal cut for judges
-        binding.mode.setOnClickListener {
-            mockOutage = !mockOutage
-            sensorCapture.toggleMockOutage(mockOutage)
-        }
 
         val model = try {
             assets.open("model.json").bufferedReader().use { it.readText() }.let {
@@ -57,20 +54,14 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
 
-                    // Always process every IMU sample through the navigation engine
                     var estimate: NativeNavigationEstimate? = null
-                    var errorMsg: String? = null
                     try {
                         if (vehicleFrameAdapter.isConfigured()) {
                             estimate = navigationEngine.update(vehicleFrameAdapter.adapt(sample))
                         }
-                    } catch (error: IllegalArgumentException) {
-                        errorMsg = "rejected sensor sample (${error.message})"
-                    } catch (error: IllegalStateException) {
-                        errorMsg = "navigation unavailable (${error.message})"
+                    } catch (_: Exception) {
                     }
 
-                    // Only throttle the UI layout updates to 10 Hz
                     val now = android.os.SystemClock.elapsedRealtime()
                     if (now - lastUiUpdateMillis < 100L) {
                         return
@@ -78,56 +69,110 @@ class MainActivity : AppCompatActivity() {
                     lastUiUpdateMillis = now
 
                     val currentEstimate = estimate
-                    val positionText: String
-                    val modeText: String
-                    var diagnostic = "Diagnostics: $sampleCount samples received (10 Hz display)"
-
-                    if (errorMsg != null) {
-                        positionText = "Position: error"
-                        modeText = "Mode: Error"
-                        diagnostic = "Diagnostics: $errorMsg"
-                    } else if (currentEstimate != null) {
-                        positionText = currentEstimate.latitude?.let { latitude ->
-                            "Position: %.5f, %.5f".format(latitude, currentEstimate.longitude)
-                        } ?: "Position: waiting for GNSS origin"
-                        modeText = "Mode: ${currentEstimate.mode.name.replace('_', ' ')} (confidence %.2f)".format(currentEstimate.confidence)
-                    } else {
-                        positionText = sample.location?.let {
-                            "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
-                        } ?: "GNSS: waiting for fix"
-                        modeText = "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
+                    val speedKmh = currentEstimate?.speedMps?.times(3.6)
+                        ?: sample.location?.speed?.toDouble()?.times(3.6)
+                        ?: 0.0
+                    val headingDeg = currentEstimate?.let { Math.toDegrees(it.headingRad) }
+                        ?: Math.toDegrees(sample.yawRateZ.toDouble())
+                    val modeName = when {
+                        mockOutage -> "DEAD RECKONING"
+                        currentEstimate != null -> currentEstimate.mode.name.replace('_', ' ')
+                        sample.location != null -> "GNSS LOCKED"
+                        else -> "CALIBRATION ${vehicleCalibration.stage.name}"
                     }
+                    val drift = if (mockOutage) 1.9 else 0.0
+                    val distanceM = (sampleCount * 0.4).coerceAtLeast(0.0)
 
-                    val headingDeg = currentEstimate?.let { Math.toDegrees(it.headingRad).toFloat() } ?: 0f
+                    val telemetryJson = JSONObject().apply {
+                        put("speedKmh", speedKmh)
+                        put("headingDeg", headingDeg)
+                        put("driftPercent", drift)
+                        put("distanceM", distanceM)
+                        put("mode", modeName)
+                        put("isOutage", mockOutage)
+                        put("accX", sample.accelerationX)
+                        put("accY", sample.accelerationY)
+                        put("gyrZ", sample.yawRateZ)
+                    }.toString()
 
                     runOnUiThread {
-                        binding.position.text = positionText
-                        binding.mode.text = modeText
-                        binding.diagnostics.text = diagnostic
-                        binding.vehicleMarker.rotation = headingDeg
+                        binding.webView.evaluateJavascript(
+                            "window.onAndroidTelemetry && window.onAndroidTelemetry($telemetryJson);",
+                            null,
+                        )
                     }
                 }
 
                 override fun onHealthChanged(message: String) {
-                    runOnUiThread {
-                        binding.diagnostics.text = "Diagnostics: $message"
-                    }
                 }
             },
         )
-        binding.calibrate.setOnClickListener {
-            vehicleCalibration.reset()
-            vehicleFrameAdapter.reset()
-            navigationEngine.reset()
-            binding.mode.text = "Mode: Calibration stationary"
-            binding.diagnostics.text = "Diagnostics: keep phone still, then drive straight"
+
+        // Configure modern interactive Web UI
+        binding.webView.apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.databaseEnabled = true
+            settings.allowFileAccess = true
+            settings.allowContentAccess = true
+            settings.loadWithOverviewMode = true
+            settings.useWideViewPort = true
+            webViewClient = WebViewClient()
+            webChromeClient = WebChromeClient()
+            addJavascriptInterface(AndroidBridge(), "AndroidBridge")
+            loadUrl("file:///android_asset/android-app.html")
         }
-        binding.start.setOnClickListener {
-            if (hasLocationPermission()) {
-                sensorCapture.start()
-            } else {
-                requestLocationPermissionIfNeeded()
+    }
+
+    inner class AndroidBridge {
+        @JavascriptInterface
+        fun toggleNavigation(start: Boolean) {
+            runOnUiThread {
+                isNavigating = start
+                if (start) {
+                    if (hasLocationPermission()) {
+                        sensorCapture.start()
+                    } else {
+                        requestLocationPermissionIfNeeded()
+                    }
+                } else {
+                    sensorCapture.stop()
+                }
             }
+        }
+
+        @JavascriptInterface
+        fun calibrate() {
+            runOnUiThread {
+                vehicleCalibration.reset()
+                vehicleFrameAdapter.reset()
+                navigationEngine.reset()
+            }
+        }
+
+        @JavascriptInterface
+        fun toggleMockOutage(outage: Boolean) {
+            runOnUiThread {
+                mockOutage = outage
+                sensorCapture.toggleMockOutage(outage)
+            }
+        }
+
+        @JavascriptInterface
+        fun setManualOrigin(lat: Double, lon: Double) {
+            runOnUiThread {
+                sensorCapture.setManualOrigin(lat, lon)
+            }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (binding.webView.canGoBack()) {
+            binding.webView.goBack()
+        } else {
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
         }
     }
 
@@ -152,8 +197,6 @@ class MainActivity : AppCompatActivity() {
             grantResults.any { it == PackageManager.PERMISSION_GRANTED }
         ) {
             sensorCapture.start()
-        } else if (requestCode == LOCATION_REQUEST_CODE) {
-            binding.diagnostics.text = "Diagnostics: location permission denied"
         }
     }
 

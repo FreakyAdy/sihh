@@ -1,0 +1,3255 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>IDR Intelligent Dead Reckoning — Production Android UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* -------------------------------------------------------------
+       PREMIUM DESIGN SYSTEM TOKENS (WARM NEUTRAL & SIGNATURE LIME)
+       ------------------------------------------------------------- */
+    :root[data-theme="light"] {
+      --bg-desktop: #eef2f6;
+      --bg-shell: #ffffff;
+      --bg-canvas: #f7f9fc;
+      --bg-card: #ffffff;
+      --bg-card-solid: #ffffff;
+      --bg-card-subtle: #f8fafc;
+      --bg-glass: rgba(255, 255, 255, 0.94);
+      --bg-charcoal: #111418;
+      
+      --accent-blue: #111418;
+      --accent-lime: #cbf338;
+      --accent-lime-light: #f3fcd4;
+      --accent-lime-glow: rgba(203, 243, 56, 0.45);
+      --accent-olive: #243008;
+      
+      --accent-crimson: #ef4444;
+      --accent-crimson-glow: rgba(239, 68, 68, 0.25);
+      --accent-crimson-light: #fee2e2;
+      
+      --accent-emerald: #10b981;
+      --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+      --accent-emerald-light: #d1fae5;
+      
+      --accent-amber: #f59e0b;
+      --accent-amber-light: #fef3c7;
+
+      --text-heading: #111418;
+      --text-body: #3b4351;
+      --text-muted: #6b7787;
+      --text-subtle: #98a3b3;
+      
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-focus: rgba(203, 243, 56, 0.6);
+      
+      --shadow-soft: 0 10px 30px -4px rgba(18, 24, 38, 0.05), 0 2px 8px -1px rgba(18, 24, 38, 0.03);
+      --shadow-glow: 0 8px 24px -2px rgba(203, 243, 56, 0.35);
+      --map-route-color: #edf2f7;
+    }
+
+    :root[data-theme="dark"] {
+      --bg-desktop: #0b0f17;
+      --bg-shell: #11151e;
+      --bg-canvas: #0e121a;
+      --bg-card: rgba(22, 28, 40, 0.92);
+      --bg-card-solid: #161c28;
+      --bg-card-subtle: rgba(255, 255, 255, 0.04);
+      --bg-glass: rgba(18, 24, 36, 0.9);
+      --bg-charcoal: #090c12;
+      
+      --accent-blue: #cbf338;
+      --accent-lime: #cbf338;
+      --accent-lime-light: rgba(203, 243, 56, 0.15);
+      --accent-lime-glow: rgba(203, 243, 56, 0.4);
+      --accent-olive: #cbf338;
+      
+      --accent-crimson: #f43f5e;
+      --accent-crimson-glow: rgba(244, 63, 94, 0.35);
+      --accent-crimson-light: rgba(244, 63, 94, 0.15);
+      
+      --accent-emerald: #10b981;
+      --accent-emerald-glow: rgba(16, 185, 129, 0.3);
+      --accent-emerald-light: rgba(16, 185, 129, 0.15);
+      
+      --accent-amber: #f59e0b;
+      --accent-amber-light: rgba(245, 158, 11, 0.15);
+
+      --text-heading: #f8fafc;
+      --text-body: #cbd5e1;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(203, 243, 56, 0.5);
+      
+      --shadow-soft: 0 12px 32px -4px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 8px 24px -2px rgba(203, 243, 56, 0.3);
+      --map-route-color: #141b24;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: background-color 0.22s ease, border-color 0.22s ease, color 0.2s ease, box-shadow 0.22s ease;
+    }
+
+    body {
+      background-color: var(--bg-desktop);
+      min-height: 100vh;
+      color: var(--text-body);
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(203, 243, 56, 0.07) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(2, 132, 199, 0.04) 0px, transparent 50%);
+    }
+
+    /* -------------------------------------------------------------
+       WORKSPACE HEADER
+       ------------------------------------------------------------- */
+    .top-navbar {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    :root[data-theme="dark"] .top-navbar {
+      background: rgba(17, 21, 30, 0.85);
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: #111418;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-lime);
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .brand-title-box h1 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.3px;
+    }
+
+    .brand-title-box span {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .header-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-switch-btn {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: var(--text-heading);
+      padding: 7px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+    }
+
+    :root[data-theme="dark"] .theme-switch-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+    }
+
+    .theme-switch-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .link-pill-btn {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: var(--text-body);
+      padding: 7px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+    }
+
+    :root[data-theme="dark"] .link-pill-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+
+    .link-pill-btn:hover {
+      color: var(--text-heading);
+      transform: translateY(-1px);
+    }
+
+    /* -------------------------------------------------------------
+       WORKSPACE TWO-COLUMN LAYOUT
+       ------------------------------------------------------------- */
+    .workspace-content {
+      flex: 1;
+      display: flex;
+      padding: 24px;
+      gap: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Left Sidebar: Screen Navigator */
+    /* -------------------------------------------------------------
+       REDESIGNED SIDEBAR MODULE DIRECTORY (PREMIUM ARCHITECTURE)
+       ------------------------------------------------------------- */
+    .sidebar-navigator {
+      flex: 1;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .glass-menu-card {
+      background: var(--bg-card);
+      border-radius: 28px;
+      padding: 22px 20px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .menu-top-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .menu-live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .live-dot-pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-lime);
+      box-shadow: 0 0 10px var(--accent-lime);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .menu-count-chip {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 2px 8px;
+    }
+
+    .menu-header-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.4px;
+      margin-top: -6px;
+    }
+
+    .menu-header-subtitle {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: -10px;
+      font-weight: 500;
+    }
+
+    .screen-nav-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .screen-nav-tile {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 13px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-nav-tile:hover {
+      transform: translateX(4px);
+      border-color: rgba(203, 243, 56, 0.4);
+      box-shadow: 0 8px 22px rgba(18, 24, 38, 0.06);
+    }
+
+    :root[data-theme="dark"] .screen-nav-tile:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(203, 243, 56, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Active State (Light Mode) */
+    .screen-nav-tile.active {
+      background: #111418;
+      border-color: #111418;
+      box-shadow: inset 3.5px 0 0 0 var(--accent-lime), 0 10px 28px rgba(17, 20, 24, 0.18);
+    }
+
+    /* Active State (Dark Mode) */
+    :root[data-theme="dark"] .screen-nav-tile.active {
+      background: linear-gradient(135deg, rgba(203, 243, 56, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border: 1px solid rgba(203, 243, 56, 0.5);
+      box-shadow: inset 3.5px 0 0 0 var(--accent-lime), 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(203, 243, 56, 0.12);
+    }
+
+    .tile-index-pill {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(0, 0, 0, 0.04);
+      padding: 3px 6px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    :root[data-theme="dark"] .tile-index-pill {
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+    }
+
+    .screen-nav-tile.active .tile-index-pill {
+      background: rgba(203, 243, 56, 0.2);
+      color: var(--accent-lime);
+    }
+
+    .tile-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-heading);
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .tile-icon-box svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    :root[data-theme="dark"] .tile-icon-box {
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+    }
+
+    .screen-nav-tile.active .tile-icon-box {
+      background: rgba(203, 243, 56, 0.22);
+      color: var(--accent-lime);
+      box-shadow: 0 0 14px var(--accent-lime-glow);
+    }
+
+    .tile-text-col {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tile-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tile-title-main {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .screen-nav-tile.active .tile-title-main {
+      color: #ffffff;
+    }
+
+    .tile-badge {
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 2.5px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+      letter-spacing: 0.2px;
+    }
+
+    .tile-badge.tag-lime {
+      background: rgba(203, 243, 56, 0.18);
+      color: #4a6100;
+      border: 1px solid rgba(203, 243, 56, 0.5);
+    }
+
+    :root[data-theme="dark"] .tile-badge.tag-lime {
+      background: rgba(203, 243, 56, 0.15);
+      color: #cbf338;
+      border-color: rgba(203, 243, 56, 0.35);
+    }
+
+    .tile-badge.tag-cyan {
+      background: rgba(2, 132, 199, 0.1);
+      color: #0284c7;
+      border: 1px solid rgba(2, 132, 199, 0.3);
+    }
+
+    :root[data-theme="dark"] .tile-badge.tag-cyan {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .tile-badge.tag-emerald {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    :root[data-theme="dark"] .tile-badge.tag-emerald {
+      background: rgba(52, 211, 153, 0.14);
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .tile-badge.tag-purple {
+      background: rgba(139, 92, 246, 0.1);
+      color: #7c3aed;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    :root[data-theme="dark"] .tile-badge.tag-purple {
+      background: rgba(167, 139, 250, 0.14);
+      color: #a78bfa;
+      border-color: rgba(167, 139, 250, 0.3);
+    }
+
+    .screen-nav-tile.active .tile-badge,
+    :root[data-theme="dark"] .screen-nav-tile.active .tile-badge {
+      background: var(--accent-lime);
+      color: #111418;
+      border-color: var(--accent-lime);
+      box-shadow: 0 2px 8px rgba(203, 243, 56, 0.4);
+    }
+
+    .tile-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .screen-nav-tile.active .tile-sub {
+      color: #94a3b8;
+    }
+
+    .tile-action-chevron {
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .tile-action-chevron svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+    }
+
+    .screen-nav-tile:hover .tile-action-chevron {
+      transform: translateX(3px);
+      color: var(--text-heading);
+    }
+
+    .screen-nav-tile.active .tile-action-chevron {
+      color: var(--accent-lime);
+      transform: translateX(4px);
+    }
+
+    /* Companion Telemetry Snapshot Box */
+    .sidebar-system-card {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .sys-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sys-card-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.6px;
+    }
+
+    .sys-pill-ok {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.12);
+      padding: 2px 6px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .sys-metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .sys-metric-col {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 6px 4px;
+    }
+
+    .sys-m-label {
+      display: block;
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .sys-m-val {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-heading);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 1px;
+    }
+
+    /* -------------------------------------------------------------
+       RIGHT SECTION: SMARTPHONE STAGE
+       ------------------------------------------------------------- */
+    .device-viewport-col {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .smartphone-shell {
+      width: 100%;
+      max-width: 400px;
+      height: clamp(560px, calc(100vh - 105px), 820px);
+      background: var(--bg-shell);
+      border-radius: 46px;
+      box-shadow: 0 30px 80px rgba(18, 24, 38, 0.12), 0 0 0 10px #ffffff, 0 0 0 12px #e2e8f0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+      transition: all 0.3s ease;
+    }
+
+    :root[data-theme="dark"] .smartphone-shell {
+      box-shadow: 0 35px 85px rgba(0, 0, 0, 0.7), 0 0 0 10px #1e293b, 0 0 0 13px #334155;
+    }
+
+    /* Phone Status Bar */
+    .phone-status-strip {
+      height: 38px;
+      padding: 10px 24px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-heading);
+      z-index: 40;
+    }
+
+    .status-network-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    /* Phone Screen Stage */
+    .phone-screen-stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-canvas);
+    }
+
+    .app-screen-view {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      scrollbar-width: none;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(20px) scale(0.99);
+      pointer-events: none;
+      transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+                  visibility 0.32s;
+      will-change: opacity, transform;
+    }
+
+    .app-screen-view::-webkit-scrollbar {
+      display: none;
+    }
+
+    .app-screen-view.active-view {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    /* Directional Exit States */
+    .app-screen-view.exit-left {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-24px) scale(0.985);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .app-screen-view.exit-right {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(24px) scale(0.985);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Directional Enter Initial Preparation (instant setup) */
+    .app-screen-view.enter-right {
+      opacity: 0 !important;
+      visibility: visible !important;
+      transform: translateX(24px) scale(0.985) !important;
+      transition: none !important;
+      z-index: 2;
+    }
+
+    .app-screen-view.enter-left {
+      opacity: 0 !important;
+      visibility: visible !important;
+      transform: translateX(-24px) scale(0.985) !important;
+      transition: none !important;
+      z-index: 2;
+    }
+
+    /* -------------------------------------------------------------
+       SCREEN 1: NATIVE DRIVING HUD
+       ------------------------------------------------------------- */
+    .hud-floating-header {
+      margin: 8px 16px 0 16px;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 12px 18px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+
+    .hud-status-bubble {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-pulse-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 12px var(--accent-emerald);
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.25); opacity: 0.7; }
+    }
+
+    .status-pulse-dot.outage {
+      background: var(--accent-crimson);
+      box-shadow: 0 0 12px var(--accent-crimson);
+    }
+
+    .hud-mode-heading {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-heading);
+    }
+
+    .hud-mode-sub {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .hud-tag-chips {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tag-chip {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      background: var(--bg-card-subtle);
+      padding: 4px 8px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Interactive Map Stage */
+    .map-render-stage {
+      flex: 1;
+      position: relative;
+      margin: 8px 16px;
+      border-radius: 28px;
+      background: var(--map-route-color);
+      overflow: hidden;
+      box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-grid-mesh {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+    }
+
+    :root[data-theme="dark"] .map-grid-mesh {
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    }
+
+    /* Vehicle Heading Puck */
+    .vehicle-puck-rig {
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .puck-halo-ring {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--accent-lime-glow);
+      animation: pulseHalo 2s infinite ease-out;
+    }
+
+    @keyframes pulseHalo {
+      0% { transform: scale(0.85); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 0.2; }
+      100% { transform: scale(0.85); opacity: 0.8; }
+    }
+
+    .puck-svg-cursor {
+      width: 46px;
+      height: 46px;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+    }
+
+    .map-zoom-dock {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .zoom-btn-pill {
+      width: 42px;
+      height: 42px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-heading);
+      box-shadow: var(--shadow-soft);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .zoom-btn-pill:hover {
+      transform: scale(1.05);
+      background: #f8fafc;
+    }
+
+    /* HUD Glass Bottom Drawer */
+    .hud-glass-drawer {
+      background: var(--bg-glass);
+      backdrop-filter: blur(28px) saturate(180%);
+      border-top-left-radius: 32px;
+      border-top-right-radius: 32px;
+      padding: 10px 16px 72px 16px; /* extra bottom padding for floating dock */
+      box-shadow: 0 -12px 35px -5px rgba(18, 24, 38, 0.08);
+      border-top: 1px solid var(--border-subtle);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .drawer-pill-handle {
+      width: 36px;
+      height: 4.5px;
+      background: #cbd5e1;
+      border-radius: 9999px;
+      margin: 0 auto 2px;
+    }
+
+    .maneuver-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .maneuver-icon-badge {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: #111418;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-lime);
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(17, 20, 24, 0.18);
+    }
+
+    .maneuver-icon-badge svg {
+      width: 24px;
+      height: 24px;
+      stroke-width: 2.5;
+    }
+
+    .maneuver-meta {
+      flex: 1;
+    }
+
+    .maneuver-distance {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.4px;
+    }
+
+    .maneuver-sub {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Glanceable 3-Cell Metric Grid */
+    .metrics-triad-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric-cell {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+    }
+
+    .metric-cell.highlight {
+      background: var(--accent-lime-light);
+      border-color: rgba(203, 243, 56, 0.5);
+    }
+
+    .metric-cell-label {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .metric-cell-val-box {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .metric-cell-num {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-heading);
+      line-height: 1.1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-cell-unit {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .hud-cta-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-main-action {
+      flex: 1.4;
+      height: 58px;
+      min-height: 58px;
+      flex-shrink: 0;
+      border-radius: 9999px;
+      background: #111418;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 0 20px 0 8px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(17, 20, 24, 0.22);
+      transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    :root[data-theme="dark"] .btn-main-action {
+      background: #161b22;
+      border: 1px solid rgba(203, 243, 56, 0.25);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 16px rgba(203, 243, 56, 0.08);
+    }
+
+    .btn-main-action:hover {
+      transform: translateY(-1px);
+      background: #1e242d;
+      border-color: rgba(203, 243, 56, 0.5);
+    }
+
+    :root[data-theme="dark"] .btn-main-action:hover {
+      background: #1f2733;
+    }
+
+    .btn-main-action .cta-circle-thumb {
+      width: 42px;
+      height: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #e6fd78, #cbf338 60%, #9cb819 100%);
+      color: #111418;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+      flex-shrink: 0;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-sizing: border-box;
+    }
+
+    .btn-main-action:hover .cta-circle-thumb {
+      transform: scale(1.03);
+    }
+
+    .btn-main-action span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-main-action.running {
+      background: var(--accent-crimson);
+      box-shadow: 0 6px 18px var(--accent-crimson-glow);
+    }
+
+    .btn-main-action.locked {
+      background: #111418;
+      border-color: var(--accent-lime);
+      box-shadow: 0 0 20px rgba(203, 243, 56, 0.25);
+    }
+
+    :root[data-theme="dark"] .btn-main-action.locked {
+      background: #161b22;
+      border-color: var(--accent-lime);
+      box-shadow: 0 0 20px rgba(203, 243, 56, 0.3);
+    }
+
+    .btn-secondary-action {
+      flex: 0.9;
+      height: 58px;
+      min-height: 58px;
+      flex-shrink: 0;
+      border-radius: 9999px;
+      background: #f1f4f8;
+      color: var(--text-heading);
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    :root[data-theme="dark"] .btn-secondary-action {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .btn-secondary-action:hover {
+      background: #e2e8f0;
+    }
+
+    :root[data-theme="dark"] .btn-secondary-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* -------------------------------------------------------------
+       IMAGE 1 & 2 INSPIRED DESIGN SYSTEM COMPONENTS
+       ------------------------------------------------------------- */
+    .screen-hero-header {
+      padding: 12px 16px 6px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .hero-date-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-date-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: -0.2px;
+    }
+
+    .hero-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .circle-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-heading);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .circle-icon-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .badge-dot-alert {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f43f5e;
+      box-shadow: 0 0 6px rgba(244, 63, 94, 0.8);
+    }
+
+    .circle-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #111418;
+      border: 1.5px solid #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+    }
+
+    :root[data-theme="dark"] .circle-avatar {
+      border-color: #334155;
+    }
+
+    .hero-greeting-title {
+      font-size: 17.5px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.4px;
+      margin: 0;
+    }
+
+    /* Inset Card Group */
+    .card-section-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .card-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .section-title-main {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.2px;
+    }
+
+    .section-title-count {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .section-menu-dots {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text-muted);
+      cursor: pointer;
+      letter-spacing: 1px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .section-menu-dots:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-heading);
+    }
+
+    .modern-inset-card {
+      background: var(--bg-card);
+      border-radius: 22px;
+      padding: 14px 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: inset 3px 0 0 0 var(--accent-lime), 0 4px 16px rgba(18, 24, 38, 0.03);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      transition: all 0.2s ease;
+    }
+
+    :root[data-theme="dark"] .modern-inset-card {
+      box-shadow: inset 3px 0 0 0 var(--accent-lime), 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .modern-inset-card:hover {
+      border-color: var(--border-focus);
+    }
+
+    .inset-card-tags-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-badge-high {
+      font-size: 10px;
+      font-weight: 700;
+      color: #e11d48;
+      background: rgba(225, 29, 72, 0.08);
+      border: 1px solid rgba(225, 29, 72, 0.22);
+      border-radius: 9999px;
+      padding: 2.5px 9px;
+    }
+
+    .pill-badge-accent {
+      font-size: 10px;
+      font-weight: 800;
+      color: #4d6300;
+      background: rgba(203, 243, 56, 0.22);
+      border: 1px solid rgba(203, 243, 56, 0.6);
+      border-radius: 9999px;
+      padding: 2.5px 9px;
+    }
+
+    :root[data-theme="dark"] .pill-badge-accent {
+      color: #cbf338;
+      background: rgba(203, 243, 56, 0.14);
+    }
+
+    .pill-badge-soft {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-card-subtle);
+      border-radius: 9999px;
+      padding: 2.5px 9px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .pill-badge-attach {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 2px 7px;
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .inset-card-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.3px;
+    }
+
+    .inset-card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .inset-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: 2px;
+    }
+
+    .card-footer-meta {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .avatar-stack {
+      display: flex;
+      align-items: center;
+    }
+
+    .micro-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--bg-card-subtle);
+      border: 1.5px solid var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      margin-left: -5px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .micro-avatar:first-child {
+      margin-left: 0;
+    }
+
+    /* -------------------------------------------------------------
+       SCREEN 2: INCLINOMETER & VEHICLE CALIBRATION
+       ------------------------------------------------------------- */
+    .module-scroll-deck {
+      padding: 8px 16px 96px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 100%;
+      box-sizing: border-box;
+    }
+
+    .component-card {
+      background: var(--bg-card);
+      border-radius: 22px;
+      padding: 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .card-top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .component-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    /* Inclinometer Circular Reticle */
+    .inclinometer-reticle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      margin: 10px 0;
+    }
+
+    .inclinometer-circle {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: var(--bg-card-subtle);
+      border: 2px dashed var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .crosshair-line-h {
+      position: absolute;
+      width: 100%;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .crosshair-line-v {
+      position: absolute;
+      height: 100%;
+      width: 1px;
+      background: var(--border-subtle);
+    }
+
+    .bubble-level-bead {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-lime);
+      box-shadow: 0 0 16px var(--accent-lime-glow);
+      z-index: 5;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .inclinometer-readings {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .reading-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-heading);
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--accent-lime-light);
+      color: var(--accent-olive);
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(203, 243, 56, 0.4);
+    }
+
+    .progress-bar-slot {
+      height: 7px;
+      background: var(--border-subtle);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-fill-animated {
+      height: 100%;
+      background: var(--accent-lime);
+      width: 0%;
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    /* -------------------------------------------------------------
+       SCREEN 3: SENSOR OSCILLOSCOPES
+       ------------------------------------------------------------- */
+    .bar-meter-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .meter-label-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      width: 22px;
+    }
+
+    .meter-track-channel {
+      flex: 1;
+      height: 12px;
+      background: var(--bg-card-subtle);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .meter-fill-bar {
+      height: 100%;
+      background: var(--accent-lime);
+      border-radius: 6px;
+      transition: width 0.1s linear;
+    }
+
+    .meter-digit-display {
+      font-size: 13px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-heading);
+      width: 52px;
+      text-align: right;
+    }
+
+    /* -------------------------------------------------------------
+       SCREEN 4: ELEGANT JUDGE OUTAGE & BLACKOUT VERIFIER
+       ------------------------------------------------------------- */
+    .outage-control-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .outage-state-hero-card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-state-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .state-beacon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--accent-lime-light);
+      border: 1px solid rgba(203, 243, 56, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--accent-olive);
+      box-shadow: 0 4px 14px var(--accent-lime-glow);
+    }
+
+    .state-beacon-circle.outage {
+      background: var(--accent-crimson-light);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: var(--accent-crimson);
+      box-shadow: 0 4px 14px var(--accent-crimson-glow);
+    }
+
+    .hero-headline {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-heading);
+    }
+
+    .hero-subtext {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Elegant Toggle Switch */
+    .switch-trigger-btn {
+      padding: 8px 18px;
+      border-radius: 9999px;
+      background: #111418;
+      border: none;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(17, 20, 24, 0.2);
+      transition: all 0.2s;
+    }
+
+    .switch-trigger-btn:hover {
+      background: #1f242d;
+    }
+
+    .switch-trigger-btn.outage {
+      background: var(--accent-crimson);
+      box-shadow: 0 4px 14px var(--accent-crimson-glow);
+    }
+
+    /* Outage Drift Area Graph */
+    .drift-graph-container {
+      width: 100%;
+      height: 110px;
+      margin: 8px 0;
+      position: relative;
+    }
+
+    .drift-graph-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Comparative Benchmark Row */
+    .comparative-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .benchmark-cell {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .benchmark-cell.pass {
+      background: var(--accent-lime-light);
+      border-color: rgba(203, 243, 56, 0.5);
+    }
+
+    .benchmark-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .benchmark-val-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .benchmark-val {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-heading);
+    }
+
+    .benchmark-status {
+      font-size: 10px;
+      font-weight: 800;
+      margin-top: 3px;
+    }
+
+    /* -------------------------------------------------------------
+       SCREEN 5: ML SPEED MODEL & STATE FLOW
+       ------------------------------------------------------------- */
+    .state-nodes-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 6px;
+    }
+
+    .state-step-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .node-disc {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg-card-subtle);
+      border: 2px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .state-step-node.active .node-disc {
+      border-color: var(--accent-lime);
+      background: var(--accent-lime-light);
+      box-shadow: 0 0 12px var(--accent-lime-glow);
+      color: var(--accent-olive);
+    }
+
+    .state-step-node.active {
+      color: var(--text-heading);
+    }
+
+    /* -------------------------------------------------------------
+       PERSISTENT FLOATING BOTTOM NAVIGATION DOCK (IMAGES 1, 2, 3)
+       ------------------------------------------------------------- */
+    .bottom-nav-dock {
+      position: absolute;
+      bottom: 12px;
+      left: 14px;
+      right: 14px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(24px) saturate(180%);
+      border-radius: 9999px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+      padding: 0 6px;
+      box-shadow: 0 14px 34px rgba(18, 24, 38, 0.09);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+    }
+
+    :root[data-theme="dark"] .bottom-nav-dock {
+      background: rgba(22, 27, 34, 0.95);
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+    }
+
+    .nav-dock-btn {
+      height: 42px;
+      background: transparent;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #64748b;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 9999px;
+      padding: 0 10px;
+      transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      flex-shrink: 0;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-dock-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      flex-shrink: 0;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.25s ease, stroke-width 0.25s ease;
+    }
+
+    .nav-dock-btn span {
+      display: inline-block;
+      max-width: 0;
+      opacity: 0;
+      margin-left: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      transform: translateX(-4px);
+      transition: max-width 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                  margin-left 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .nav-dock-btn:hover:not(.active) {
+      color: var(--text-heading);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    :root[data-theme="dark"] .nav-dock-btn:hover:not(.active) {
+      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-dock-btn:active {
+      transform: scale(0.92);
+      transition-duration: 0.1s;
+    }
+
+    /* Active Capsule Pill */
+    .nav-dock-btn.active {
+      background: #111418;
+      color: #ffffff;
+      padding: 0 16px;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(17, 20, 24, 0.18);
+    }
+
+    :root[data-theme="dark"] .nav-dock-btn.active {
+      background: var(--accent-lime);
+      color: #111418;
+      box-shadow: 0 4px 18px rgba(203, 243, 56, 0.35);
+    }
+
+    .nav-dock-btn.active span {
+      max-width: 72px;
+      opacity: 1;
+      margin-left: 6px;
+      transform: translateX(0);
+    }
+
+    .nav-dock-btn.active svg {
+      stroke: currentColor;
+      stroke-width: 2.4;
+      transform: scale(1.08);
+    }
+
+    :root[data-theme="dark"] .nav-dock-btn.active svg {
+      stroke: #111418;
+    }
+
+    .home-indicator-tray {
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+    }
+
+    .home-pill-line {
+      width: 92px;
+      height: 4px;
+      background: #94a3b8;
+      border-radius: 9999px;
+      opacity: 0.4;
+    }
+
+    /* Toast Notification */
+    .hud-toast-pill {
+      position: absolute;
+      top: 48px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 100;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
+    }
+
+    .hud-toast-pill.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 900px) {
+      .workspace-content {
+        flex-direction: column;
+        align-items: center;
+      }
+      .sidebar-navigator {
+        max-width: 100%;
+      }
+    }
+
+    /* Standalone Android App / Mobile Full-Screen Engine */
+    @media (max-width: 680px) {
+      body {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: var(--bg-canvas) !important;
+        overflow: hidden !important;
+      }
+      .top-navbar,
+      .sidebar-navigator {
+        display: none !important;
+      }
+      .workspace-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+      }
+      .device-viewport-col {
+        width: 100vw !important;
+        height: 100vh !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .smartphone-shell {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+    }
+
+    body.is-android-app {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: var(--bg-canvas) !important;
+      overflow: hidden !important;
+    }
+    body.is-android-app .top-navbar,
+    body.is-android-app .sidebar-navigator {
+      display: none !important;
+    }
+    body.is-android-app .workspace-content {
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+    }
+    body.is-android-app .device-viewport-col {
+      width: 100vw !important;
+      height: 100vh !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    body.is-android-app .smartphone-shell {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. TOP NAV WORKSPACE -->
+  <header class="top-navbar">
+    <div class="brand-cluster">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-title-box">
+        <h1>IDR Production Architecture</h1>
+        <span>Dead Reckoning Navigation System</span>
+      </div>
+    </div>
+    <div class="header-actions-row">
+      <!-- Theme Switch Button -->
+      <button id="themeToggleBtn" class="theme-switch-btn" title="Toggle Light / Dark Mode">
+        <span id="themeEmoji">🌙</span>
+        <span id="themeLabelText">Dark Mode</span>
+      </button>
+
+      <a href="mobile-ui.html" class="link-pill-btn">
+        <span>🏔️ Alpine UI</span>
+      </a>
+      <a href="index.html" class="link-pill-btn">
+        <span> Presentation View</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- 2. TWO-COLUMN WORKSPACE -->
+  <div class="workspace-content">
+
+    <!-- Left Column: Screen Navigator -->
+    <aside class="sidebar-navigator">
+      <div class="glass-menu-card">
+        <div class="menu-top-badge-row">
+          <div class="menu-live-badge">
+            <span class="live-dot-pulse"></span>
+            <span>SYSTEM ARCHITECTURE</span>
+          </div>
+          <span class="menu-count-chip">5 Modules</span>
+        </div>
+        <div class="menu-header-title">System Module Directory</div>
+        <div class="menu-header-subtitle">Select active sub-system viewport &amp; live pipeline monitors</div>
+
+        <div class="screen-nav-deck">
+          
+          <!-- View 1 -->
+          <div class="screen-nav-tile active" data-screen="nav">
+            <span class="tile-index-pill">01</span>
+            <div class="tile-icon-box">
+              <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div class="tile-text-col">
+              <div class="tile-name-row">
+                <span class="tile-title-main">Driving Navigation HUD</span>
+                <span class="tile-badge tag-lime">ACTIVE 10Hz</span>
+              </div>
+              <div class="tile-sub">Vector canvas, speed metric triad &amp; heading puck</div>
+            </div>
+            <div class="tile-action-chevron">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- View 2 -->
+          <div class="screen-nav-tile" data-screen="calib">
+            <span class="tile-index-pill">02</span>
+            <div class="tile-icon-box">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
+            </div>
+            <div class="tile-text-col">
+              <div class="tile-name-row">
+                <span class="tile-title-main">In-Vehicle Calibration</span>
+                <span class="tile-badge tag-cyan">INCLINOMETER</span>
+              </div>
+              <div class="tile-sub">Stationary gravity level &amp; forward motion detector</div>
+            </div>
+            <div class="tile-action-chevron">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- View 3 -->
+          <div class="screen-nav-tile" data-screen="telemetry">
+            <span class="tile-index-pill">03</span>
+            <div class="tile-icon-box">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><circle cx="18" cy="7" r="2"/><circle cx="6" cy="17" r="2"/></svg>
+            </div>
+            <div class="tile-text-col">
+              <div class="tile-name-row">
+                <span class="tile-title-main">Sensor Oscilloscopes</span>
+                <span class="tile-badge tag-emerald">100 HZ BUS</span>
+              </div>
+              <div class="tile-sub">Dynamic bar equalizers for Accel, Gyro &amp; GNSS</div>
+            </div>
+            <div class="tile-action-chevron">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- View 4 -->
+          <div class="screen-nav-tile" data-screen="outage">
+            <span class="tile-index-pill">04</span>
+            <div class="tile-icon-box">
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+            </div>
+            <div class="tile-text-col">
+              <div class="tile-name-row">
+                <span class="tile-title-main">Outage &amp; Drift Verifier</span>
+                <span class="tile-badge tag-lime">2.42% PASS</span>
+              </div>
+              <div class="tile-sub">Comparative tunnel drift, ZUPT clamp, venue origin</div>
+            </div>
+            <div class="tile-action-chevron">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- View 5 -->
+          <div class="screen-nav-tile" data-screen="model">
+            <span class="tile-index-pill">05</span>
+            <div class="tile-icon-box">
+              <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><path d="M8.5 7.5l7 3M8.5 16.5l7-3"/></svg>
+            </div>
+            <div class="tile-text-col">
+              <div class="tile-name-row">
+                <span class="tile-title-main">ML Speed Model &amp; Flow</span>
+                <span class="tile-badge tag-purple">MODEL.JSON</span>
+              </div>
+              <div class="tile-sub">State-machine nodes, linear ridge coefficients</div>
+            </div>
+            <div class="tile-action-chevron">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Companion Telemetry Snapshot Card -->
+        <div class="sidebar-system-card">
+          <div class="sys-card-header">
+            <span class="sys-card-label">EDGE FUSION ENGINE</span>
+            <span class="sys-pill-ok">ONLINE • 100 Hz</span>
+          </div>
+          <div class="sys-metrics-row">
+            <div class="sys-metric-col">
+              <span class="sys-m-label">Drift Rate</span>
+              <span class="sys-m-val">2.42%</span>
+            </div>
+            <div class="sys-metric-col">
+              <span class="sys-m-label">Latency</span>
+              <span class="sys-m-val">&lt; 3.2ms</span>
+            </div>
+            <div class="sys-metric-col">
+              <span class="sys-m-label">Zero Clamp</span>
+              <span class="sys-m-val">ZUPT ON</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Right Column: Smartphone Shell -->
+    <main class="device-viewport-col">
+      <div class="smartphone-shell">
+
+        <!-- Toast Pill -->
+        <div id="hudToast" class="hud-toast-pill">Notification</div>
+
+        <!-- Android Status Bar -->
+        <header class="phone-status-strip">
+          <div>
+            <span style="font-weight: 800;">9:41</span>
+            <span>📍</span>
+          </div>
+          <div class="status-network-icons">
+            <span style="font-weight: 800;">5G</span>
+            <span style="font-weight: 800;">VoLTE</span>
+            <span style="background: var(--text-heading); color: var(--bg-card-solid); padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800;">98%</span>
+          </div>
+        </header>
+
+        <!-- Dynamic Screen Stage -->
+        <div class="phone-screen-stage">
+
+          <!-- ============================================== -->
+          <!-- SCREEN 1: DRIVING NAVIGATION HUD               -->
+          <!-- ============================================== -->
+          <div class="app-screen-view active-view" id="paneNav">
+            
+            <!-- Top Status Pill -->
+            <section class="hud-floating-header" id="topPillBtn" title="Tap to simulate tunnel blackout">
+              <div class="hud-status-bubble">
+                <div class="status-pulse-dot" id="statusPulseDot"></div>
+                <div>
+                  <div class="hud-mode-heading">IDR Navigator</div>
+                  <div class="hud-mode-sub" id="modeSubtitle">GNSS LOCKED</div>
+                </div>
+              </div>
+              <div class="hud-tag-chips">
+                <span class="tag-chip" id="venueOriginTag">📍 P₀</span>
+                <span class="tag-chip">🛑 ZUPT</span>
+              </div>
+            </section>
+
+            <!-- Vector Map Canvas -->
+            <section class="map-render-stage">
+              <div class="map-grid-mesh"></div>
+
+              <!-- Route Trajectory Corridor SVG -->
+              <svg class="map-route-svg" viewBox="0 0 380 460" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+                <!-- Glowing corridor envelope -->
+                <path d="M190,430 L190,260 Q190,170 235,120 L275,60" fill="none" stroke="rgba(203, 243, 56, 0.28)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- Core electric lime active route -->
+                <path d="M190,430 L190,260 Q190,170 235,120 L275,60" fill="none" stroke="#cbf338" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- Target Waypoint pin -->
+                <circle cx="275" cy="60" r="7" fill="#111418" stroke="#cbf338" stroke-width="3"/>
+              </svg>
+
+              <!-- Vehicle Heading Puck -->
+              <div class="vehicle-puck-rig" id="vehiclePuck">
+                <div class="puck-halo-ring"></div>
+                <svg class="puck-svg-cursor" viewBox="0 0 48 48">
+                  <circle cx="24" cy="24" r="20" fill="rgba(203, 243, 56, 0.35)"/>
+                  <path d="M24,6 L38,40 L24,32 L10,40 Z" fill="#cbf338"/>
+                  <path d="M24,6 L38,40 L24,32 L10,40 Z" fill="none" stroke="#111418" stroke-width="2.5" stroke-linejoin="round"/>
+                </svg>
+              </div>
+
+              <!-- Zoom Dock -->
+              <div class="map-zoom-dock">
+                <button class="zoom-btn-pill" id="zoomInBtn">+</button>
+                <button class="zoom-btn-pill" id="zoomOutBtn">−</button>
+              </div>
+            </section>
+
+            <!-- Glass Bottom Drawer -->
+            <section class="hud-glass-drawer">
+              <div class="drawer-pill-handle"></div>
+
+              <!-- Maneuver Cluster -->
+              <div class="maneuver-row">
+                <div class="maneuver-icon-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M6 19V8a3 3 0 0 1 3-3h9"/>
+                    <polyline points="14 1 18 5 14 9"/>
+                  </svg>
+                </div>
+                <div class="maneuver-meta">
+                  <div class="maneuver-distance">In 320 m</div>
+                  <div class="maneuver-sub">Enter Atal Tunnel • NH-3 Highway</div>
+                </div>
+              </div>
+
+              <!-- 3-Cell Metric Grid -->
+              <div class="metrics-triad-grid">
+                <div class="metric-cell">
+                  <span class="metric-cell-label">SPEED</span>
+                  <div class="metric-cell-val-box">
+                    <span class="metric-cell-num" id="speedDisplayNum">0</span>
+                    <span class="metric-cell-unit">KM/H</span>
+                  </div>
+                </div>
+                <div class="metric-cell">
+                  <span class="metric-cell-label">DRIFT</span>
+                  <div class="metric-cell-val-box">
+                    <span class="metric-cell-num" id="driftDisplayNum" style="color: var(--accent-emerald);">0.0</span>
+                    <span class="metric-cell-unit">%</span>
+                  </div>
+                </div>
+                <div class="metric-cell">
+                  <span class="metric-cell-label">DISTANCE</span>
+                  <div class="metric-cell-val-box">
+                    <span class="metric-cell-num" id="distDisplayNum">650</span>
+                    <span class="metric-cell-unit">M</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Buttons -->
+              <div class="hud-cta-row">
+                <button class="btn-main-action" id="startActionBtn">
+                  <div class="cta-circle-thumb">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                  </div>
+                  <span id="startActionText">START</span>
+                </button>
+                <button class="btn-secondary-action" id="quickCalibBtn">
+                  <span>⚖️ Calibrate</span>
+                </button>
+              </div>
+            </section>
+
+          </div>
+
+          <!-- ============================================== -->
+          <!-- SCREEN 2: INCLINOMETER & CALIBRATION           -->
+          <!-- ============================================== -->
+          <div class="app-screen-view" id="paneCalib">
+            <!-- Screen Hero Header (Image 1) -->
+            <div class="screen-hero-header">
+              <div class="hero-date-row">
+                <span class="hero-date-text">Saturday, Oct 10, 2026</span>
+                <div class="hero-header-actions">
+                  <button class="circle-icon-btn notif-bell-action" title="System Alerts">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="badge-dot-alert"></span>
+                  </button>
+                  <div class="circle-avatar" title="Vehicle Operator">🏎️</div>
+                </div>
+              </div>
+              <h2 class="hero-greeting-title">In-Vehicle Calibration</h2>
+            </div>
+
+            <div class="module-scroll-deck">
+              
+              <!-- Group 1: Reticle Level Inset Card -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Sensor Alignment</span>
+                    <span class="section-title-count">2 Stages</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-high" id="calibBadge1">STATIONARY</span>
+                    <span class="pill-badge-soft">Stage 1</span>
+                    <span class="pill-badge-soft">Inclinometer</span>
+                    <div class="pill-badge-attach">📎 100Hz</div>
+                  </div>
+                  <div class="inset-card-title">Gravity Decoupling Reticle</div>
+                  <div class="inset-card-sub">Decouple chassis gravity vector &amp; lock pitch/roll horizon before driving.</div>
+
+                  <div class="inclinometer-reticle-wrap">
+                    <div class="inclinometer-circle">
+                      <div class="crosshair-line-h"></div>
+                      <div class="crosshair-line-v"></div>
+                      <div class="bubble-level-bead" id="bubbleLevel"></div>
+                    </div>
+                    <div class="inclinometer-readings">
+                      <div class="reading-pill">
+                        <span>Pitch:</span>
+                        <strong id="anglePitchVal">+2.1°</strong>
+                      </div>
+                      <div class="reading-pill">
+                        <span>Roll:</span>
+                        <strong id="angleRollVal">-0.8°</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="progress-bar-slot">
+                    <div class="progress-bar-fill-animated" id="calibProgBar"></div>
+                  </div>
+
+                  <div class="inset-card-footer">
+                    <div class="card-footer-meta">Offset: &lt;0.05 m/s²</div>
+                    <div class="avatar-stack">
+                      <span class="micro-avatar">⚖️</span>
+                      <span class="micro-avatar">🧭</span>
+                      <span class="micro-avatar">🏎️</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Group 2: Forward Axis Indicator -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Chassis Coordinate Frame</span>
+                    <span class="section-title-count">Forward Locked</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-accent">+Y FORWARD</span>
+                    <span class="pill-badge-soft">Stage 2</span>
+                    <span class="pill-badge-soft">Motion Check</span>
+                    <div class="pill-badge-attach">🎯 Locked</div>
+                  </div>
+                  <div class="inset-card-title">Chassis Forward Axis Detection</div>
+                  <div class="inset-card-sub">Isolates vehicular longitudinal acceleration from lateral roll and bounce.</div>
+
+                  <div style="display: flex; justify-content: space-around; margin-top: 6px;">
+                    <div style="text-align: center;">
+                      <div style="font-size: 22px;">⬆️</div>
+                      <div style="font-size: 13px; font-weight: 800; color: var(--accent-olive); font-family: 'JetBrains Mono', monospace;">+Y AXIS</div>
+                      <div style="font-size: 10px; color: var(--text-muted);">Forward Locked</div>
+                    </div>
+                    <div style="text-align: center; opacity: 0.38;">
+                      <div style="font-size: 22px;">➡️</div>
+                      <div style="font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono', monospace;">+X AXIS</div>
+                      <div style="font-size: 10px; color: var(--text-muted);">Lateral</div>
+                    </div>
+                    <div style="text-align: center; opacity: 0.38;">
+                      <div style="font-size: 22px;">🎯</div>
+                      <div style="font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono', monospace;">+Z AXIS</div>
+                      <div style="font-size: 10px; color: var(--text-muted);">Vertical</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Execute Button with Spherical 3D Thumb -->
+              <button class="btn-main-action" id="runCalibActionBtn" style="margin-top: 10px; width: 100%;">
+                <div class="cta-circle-thumb">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <span id="calibBtnText" style="flex: 1; text-align: center; margin-right: 38px;">CALIBRATE AXES</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- SCREEN 3: SENSOR OSCILLOSCOPES                 -->
+          <!-- ============================================== -->
+          <div class="app-screen-view" id="paneTelemetry">
+            <!-- Screen Hero Header (Image 1) -->
+            <div class="screen-hero-header">
+              <div class="hero-date-row">
+                <span class="hero-date-text">Saturday, Oct 10, 2026</span>
+                <div class="hero-header-actions">
+                  <button class="circle-icon-btn notif-bell-action" title="Sensor Bus Alerts">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="badge-dot-alert"></span>
+                  </button>
+                  <div class="circle-avatar" title="Vehicle Operator">🏎️</div>
+                </div>
+              </div>
+              <h2 class="hero-greeting-title">Sensor Oscilloscopes</h2>
+            </div>
+
+            <div class="module-scroll-deck">
+              
+              <!-- Accelerometer Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Dynamics Stream</span>
+                    <span class="section-title-count">3-Axis Accel</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-high">ACCEL HIGH</span>
+                    <span class="pill-badge-soft">100 Hz</span>
+                    <span class="pill-badge-soft">±16g Range</span>
+                    <div class="pill-badge-attach">🏎️ Realtime</div>
+                  </div>
+                  <div class="inset-card-title">Linear Acceleration Bus</div>
+                  <div class="inset-card-sub">Dynamic equalizer meters tracking high-frequency longitudinal and bounce loads.</div>
+
+                  <div class="bar-meter-line">
+                    <span class="meter-label-tag">Ax</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" id="barAccX" style="width: 20%;"></div></div>
+                    <span class="meter-digit-display" id="valAccX">0.02</span>
+                  </div>
+
+                  <div class="bar-meter-line">
+                    <span class="meter-label-tag">Ay</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" id="barAccY" style="width: 45%;"></div></div>
+                    <span class="meter-digit-display" id="valAccY">0.14</span>
+                  </div>
+
+                  <div class="bar-meter-line">
+                    <span class="meter-label-tag">Az</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" id="barAccZ" style="width: 98%;"></div></div>
+                    <span class="meter-digit-display" id="valAccZ">9.81</span>
+                  </div>
+
+                  <div class="inset-card-footer">
+                    <div class="card-footer-meta">Sampling: 100 Hz • Latency: 0.8 ms</div>
+                    <div class="avatar-stack">
+                      <span class="micro-avatar">🏎️</span>
+                      <span class="micro-avatar">📊</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Gyroscope Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Angular Velocity Stream</span>
+                    <span class="section-title-count">3-Axis Gyro</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-accent">GYRO RATE</span>
+                    <span class="pill-badge-soft">100 Hz</span>
+                    <span class="pill-badge-soft">±2000 dps</span>
+                    <div class="pill-badge-attach">🧭 Mahony</div>
+                  </div>
+                  <div class="inset-card-title">Rotational Gyro Bus</div>
+                  <div class="inset-card-sub">Euler integration &amp; yaw rate equalizer for dead-reckoned heading stability.</div>
+
+                  <div class="bar-meter-line">
+                    <span class="meter-label-tag">ωx</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" id="barGyrX" style="width: 15%;"></div></div>
+                    <span class="meter-digit-display" id="valGyrX">0.00</span>
+                  </div>
+
+                  <div class="bar-meter-line">
+                    <span class="meter-label-tag">ωy</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" id="barGyrY" style="width: 18%;"></div></div>
+                    <span class="meter-digit-display" id="valGyrY">0.01</span>
+                  </div>
+
+                  <div class="bar-meter-line">
+                    <span class="meter-label-tag">ωz</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" id="barGyrZ" style="width: 24%;"></div></div>
+                    <span class="meter-digit-display" id="valGyrZ">0.02</span>
+                  </div>
+
+                  <div class="inset-card-footer">
+                    <div class="card-footer-meta">Filter: β = 0.04 Mahony</div>
+                    <div class="avatar-stack">
+                      <span class="micro-avatar">🧭</span>
+                      <span class="micro-avatar">⚡</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GNSS Health Inset Card -->
+              <div class="modern-inset-card" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+                <div>
+                  <div class="component-label">SATELLITE FIX STRENGTH</div>
+                  <div style="font-size: 15px; font-weight: 800; color: var(--accent-emerald); margin-top: 2px;">14 SATELLITES LOCKED</div>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <span style="width: 7px; height: 14px; border-radius: 2px; background: var(--accent-emerald);"></span>
+                  <span style="width: 7px; height: 18px; border-radius: 2px; background: var(--accent-emerald);"></span>
+                  <span style="width: 7px; height: 22px; border-radius: 2px; background: var(--accent-emerald);"></span>
+                  <span style="width: 7px; height: 26px; border-radius: 2px; background: var(--accent-emerald);"></span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- SCREEN 4: ELEGANT JUDGE OUTAGE VERIFIER        -->
+          <!-- ============================================== -->
+          <div class="app-screen-view" id="paneOutage">
+            <!-- Screen Hero Header (Image 1) -->
+            <div class="screen-hero-header">
+              <div class="hero-date-row">
+                <span class="hero-date-text">Saturday, Oct 10, 2026</span>
+                <div class="hero-header-actions">
+                  <button class="circle-icon-btn notif-bell-action" title="Outage Verifier Alerts">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="badge-dot-alert"></span>
+                  </button>
+                  <div class="circle-avatar" title="Vehicle Operator">🏎️</div>
+                </div>
+              </div>
+              <h2 class="hero-greeting-title">Outage &amp; Drift Verifier</h2>
+            </div>
+
+            <div class="module-scroll-deck">
+              
+              <!-- Hero Status & Toggle Switch Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">GNSS Ingress Controller</span>
+                    <span class="section-title-count">Tunnel Simulation</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-high">BLACKOUT TRIGGER</span>
+                    <span class="pill-badge-soft">1 KM Tunnel</span>
+                    <span class="pill-badge-soft">ZUPT Clamped</span>
+                    <div class="pill-badge-attach">🧪 Test</div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <div class="state-beacon-circle" id="outageBeaconIcon">🛰️</div>
+                      <div>
+                        <div class="hero-headline" id="outageHeroTitle">GNSS Signal Nominal</div>
+                        <div class="hero-subtext" id="outageHeroSub">Full 3D Satellite Constellation Active</div>
+                      </div>
+                    </div>
+                    <button class="switch-trigger-btn" id="outageToggleSwitch">
+                      <span id="outageSwitchText">Cut GNSS</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Minimalist Area Graph Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Cumulative Drift Curve</span>
+                    <span class="section-title-count">10% Ceiling</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-accent">2.42% VERIFIED</span>
+                    <span class="pill-badge-soft">&lt;10% SIH Mandate</span>
+                    <span class="pill-badge-soft">1000m Outage</span>
+                    <div class="pill-badge-attach">✓ PASS</div>
+                  </div>
+                  <div class="card-top-header" style="margin-top: 4px;">
+                    <span class="component-label">1 KM OUTAGE DRIFT ACCUMULATION</span>
+                    <span style="font-size: 17px; font-weight: 800; color: var(--accent-emerald);" id="outageReportNum">2.42%</span>
+                  </div>
+
+                  <div class="drift-graph-container">
+                    <svg class="drift-graph-svg" viewBox="0 0 320 90" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="driftAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stop-color="#cbf338" stop-opacity="0.38"/>
+                          <stop offset="85%" stop-color="#cbf338" stop-opacity="0.05"/>
+                          <stop offset="100%" stop-color="#cbf338" stop-opacity="0.0"/>
+                        </linearGradient>
+                      </defs>
+
+                      <!-- SIH 10% Ceiling Limit Line -->
+                      <line x1="0" y1="18" x2="320" y2="18" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+                      <text x="6" y="13" fill="#94a3b8" font-size="8.5" font-family="monospace">10% SIH CEILING</text>
+
+                      <!-- Shaded Area -->
+                      <polygon points="0,85 60,82 120,74 180,68 240,64 300,58 320,54 320,90 0,90" fill="url(#driftAreaGrad)"/>
+
+                      <!-- Drift Line -->
+                      <polyline points="0,85 60,82 120,74 180,68 240,64 300,58 320,54" fill="none" stroke="#111418" stroke-width="2.5" stroke-linecap="round"/>
+
+                      <circle cx="320" cy="54" r="5" fill="#cbf338" stroke="#111418" stroke-width="2"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comparative Performance Benchmark Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Estimator Comparison</span>
+                    <span class="section-title-count">1 KM Horizon</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="comparative-grid">
+                    <div class="benchmark-cell" style="border-color: rgba(16, 185, 129, 0.35);">
+                      <div class="benchmark-tag" style="color: var(--accent-emerald);">IDR FUSION</div>
+                      <div class="benchmark-val-row">
+                        <span class="benchmark-val" style="color: var(--accent-emerald);">2.42%</span>
+                      </div>
+                      <div class="benchmark-status" style="color: var(--accent-emerald);">✓ PASS (&lt;10%)</div>
+                    </div>
+
+                    <div class="benchmark-cell" style="border-color: rgba(244, 63, 94, 0.35);">
+                      <div class="benchmark-tag" style="color: var(--accent-crimson);">NAÏVE DOUBLE-INT</div>
+                      <div class="benchmark-val-row">
+                        <span class="benchmark-val" style="color: var(--accent-crimson);">18.5%</span>
+                      </div>
+                      <div class="benchmark-status" style="color: var(--accent-crimson);">✗ FAILED (Diverged)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Anchor Origin Action Card -->
+              <div class="modern-inset-card" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+                <div>
+                  <div class="component-label">VENUE STARTING ORIGIN (P₀)</div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--text-heading); margin-top: 2px;">28.6139° N, 77.2090° E</div>
+                </div>
+                <button class="btn-secondary-action" id="anchorP0Btn" style="height: 38px; padding: 0 14px; font-size: 12px;">
+                  📍 Anchor Origin
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- SCREEN 5: ML SPEED MODEL & FLOW GRAPH          -->
+          <!-- ============================================== -->
+          <div class="app-screen-view" id="paneModel">
+            <!-- Screen Hero Header (Image 1) -->
+            <div class="screen-hero-header">
+              <div class="hero-date-row">
+                <span class="hero-date-text">Saturday, Oct 10, 2026</span>
+                <div class="hero-header-actions">
+                  <button class="circle-icon-btn notif-bell-action" title="ML Pipeline Alerts">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="badge-dot-alert"></span>
+                  </button>
+                  <div class="circle-avatar" title="Vehicle Operator">🏎️</div>
+                </div>
+              </div>
+              <h2 class="hero-greeting-title">ML Speed Model &amp; Flow</h2>
+            </div>
+
+            <div class="module-scroll-deck">
+              
+              <!-- State Machine Graph Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Kalman Fusion State Machine</span>
+                    <span class="section-title-count">4 Nodes</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-accent">STATE FLOW</span>
+                    <span class="pill-badge-soft">Extended Kalman</span>
+                    <span class="pill-badge-soft">Hysteresis Check</span>
+                    <div class="pill-badge-attach">🧠 Engine</div>
+                  </div>
+                  <div class="inset-card-title">Transition Logic</div>
+                  <div class="inset-card-sub">Automatic switching between GNSS carrier lock, inertial DR, and recovery hysteresis.</div>
+
+                  <div class="state-nodes-row" style="margin-top: 6px;">
+                    <div class="state-step-node" id="nodeInit">
+                      <div class="node-disc">1</div>
+                      <span>INIT</span>
+                    </div>
+                    <span style="color: #64748b;">➔</span>
+                    <div class="state-step-node active" id="nodeGnss">
+                      <div class="node-disc">2</div>
+                      <span>GNSS</span>
+                    </div>
+                    <span style="color: #64748b;">➔</span>
+                    <div class="state-step-node" id="nodeDr">
+                      <div class="node-disc">3</div>
+                      <span>DR</span>
+                    </div>
+                    <span style="color: #64748b;">➔</span>
+                    <div class="state-step-node" id="nodeRec">
+                      <div class="node-disc">4</div>
+                      <span>RECOVER</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Feature Weights Group (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">Ridge Model Coefficients</span>
+                    <span class="section-title-count">model.json</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-high">RIDGE λ=0.01</span>
+                    <span class="pill-badge-soft">3-Features</span>
+                    <span class="pill-badge-soft">Zero-Bias</span>
+                    <div class="pill-badge-attach">⚡ Weights</div>
+                  </div>
+                  <div class="inset-card-title">Linear Pseudo-Speed Predictor</div>
+                  <div class="inset-card-sub">Feature weights trained on multi-route vehicular profiles to predict speed without wheel odometry.</div>
+
+                  <div class="bar-meter-line" style="margin-top: 6px;">
+                    <span style="font-size: 11px; font-weight: 700; width: 65px; color: var(--text-muted);">a_fwd</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" style="width: 65%;"></div></div>
+                    <span class="meter-digit-display">+0.214</span>
+                  </div>
+
+                  <div class="bar-meter-line">
+                    <span style="font-size: 11px; font-weight: 700; width: 65px; color: var(--text-muted);">yaw_z</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" style="width: 40%; background: var(--accent-crimson);"></div></div>
+                    <span class="meter-digit-display">-0.082</span>
+                  </div>
+
+                  <div class="bar-meter-line">
+                    <span style="font-size: 11px; font-weight: 700; width: 65px; color: var(--text-muted);">|a|</span>
+                    <div class="meter-track-channel"><div class="meter-fill-bar" style="width: 30%;"></div></div>
+                    <span class="meter-digit-display">+0.045</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Edge Inference Pipeline Specs (Image 1) -->
+              <div class="card-section-group">
+                <div class="card-section-header">
+                  <div>
+                    <span class="section-title-main">On-Device Engine</span>
+                    <span class="section-title-count">Quantized</span>
+                  </div>
+                  <div class="section-menu-dots">•••</div>
+                </div>
+
+                <div class="modern-inset-card">
+                  <div class="inset-card-tags-row">
+                    <span class="pill-badge-accent">TFLITE QUANTIZED</span>
+                    <span class="pill-badge-soft">Zero Allocations</span>
+                    <span class="pill-badge-soft">ARM NEON</span>
+                    <div class="pill-badge-attach">📱 Mobile</div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+                    <div style="background: var(--bg-card-subtle); padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                      <div style="font-size: 9px; color: var(--text-muted); font-weight: 700;">INFERENCE LATENCY</div>
+                      <div style="font-size: 14px; font-weight: 800; color: var(--text-heading); font-family: 'JetBrains Mono', monospace;">1.2 ms / step</div>
+                    </div>
+                    <div style="background: var(--bg-card-subtle); padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                      <div style="font-size: 9px; color: var(--text-muted); font-weight: 700;">FUSION SAMPLING</div>
+                      <div style="font-size: 14px; font-weight: 800; color: var(--accent-olive); font-family: 'JetBrains Mono', monospace;">100 Hz Sync</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 3. BOTTOM TAB NAVIGATION (IMAGES 1, 2, 3) -->
+        <nav class="bottom-nav-dock">
+          <!-- Tab 1: HUD (Route S-Curve with dots, Image 2) -->
+          <button class="nav-dock-btn active" data-tab="nav" title="Navigation HUD">
+            <svg viewBox="0 0 24 24">
+              <circle cx="6" cy="18" r="2.5" fill="currentColor"/>
+              <circle cx="18" cy="6" r="2.5" fill="currentColor"/>
+              <path d="M8.5 18h4a4 4 0 0 0 4-4v-4a4 4 0 0 0-4-4h-4"/>
+            </svg>
+            <span>HUD</span>
+          </button>
+
+          <!-- Tab 2: Calibration (Reticle Crosshairs, Image 1) -->
+          <button class="nav-dock-btn" data-tab="calib" title="Chassis Level & Inclinometer">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8"/>
+              <circle cx="12" cy="12" r="2.5"/>
+              <line x1="12" y1="2" x2="12" y2="4.5"/>
+              <line x1="12" y1="19.5" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="4.5" y2="12"/>
+              <line x1="19.5" y1="12" x2="22" y2="12"/>
+            </svg>
+            <span>Level</span>
+          </button>
+
+          <!-- Tab 3: Sensors (3 Dynamic Equalizer Bars, Image 2) -->
+          <button class="nav-dock-btn" data-tab="telemetry" title="100 Hz Sensor Oscilloscopes">
+            <svg viewBox="0 0 24 24">
+              <line x1="6" y1="18" x2="6" y2="11"/>
+              <line x1="12" y1="18" x2="12" y2="5"/>
+              <line x1="18" y1="18" x2="18" y2="13"/>
+            </svg>
+            <span>Sensors</span>
+          </button>
+
+          <!-- Tab 4: Outage (Shield with Notification Dot, Image 2) -->
+          <button class="nav-dock-btn" data-tab="outage" title="Blackout & Drift Verifier">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>Outage</span>
+          </button>
+
+          <!-- Tab 5: Model (4 Connected Nodes Cluster, Image 2) -->
+          <button class="nav-dock-btn" data-tab="model" title="ML Speed Model & Flow">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="6" r="2.5"/>
+              <circle cx="12" cy="18" r="2.5"/>
+              <circle cx="6" cy="12" r="2.5"/>
+              <circle cx="18" cy="12" r="2.5"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+            <span>Model</span>
+          </button>
+        </nav>
+
+        <footer class="home-indicator-tray">
+          <div class="home-pill-line"></div>
+        </footer>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // THEME SWITCHER LOGIC
+    // -------------------------------------------------------------
+    const htmlElem = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleBtn');
+    const themeEmoji = document.getElementById('themeEmoji');
+    const themeLabelText = document.getElementById('themeLabelText');
+
+    const savedTheme = localStorage.getItem('idr_theme') || 'light';
+    applyThemeMode(savedTheme);
+
+    function applyThemeMode(mode) {
+      htmlElem.setAttribute('data-theme', mode);
+      if (mode === 'light') {
+        themeEmoji.textContent = '🌙';
+        themeLabelText.textContent = 'Dark Mode';
+      } else {
+        themeEmoji.textContent = '☀️';
+        themeLabelText.textContent = 'Light Mode';
+      }
+      localStorage.setItem('idr_theme', mode);
+    }
+
+    themeBtn.addEventListener('click', () => {
+      const active = htmlElem.getAttribute('data-theme');
+      applyThemeMode(active === 'dark' ? 'light' : 'dark');
+      triggerToast(`Switched to ${active === 'dark' ? 'Light' : 'Dark'} Mode`);
+    });
+
+    // -------------------------------------------------------------
+    // 5-SCREEN NAVIGATION DECK
+    // -------------------------------------------------------------
+    const navTiles = document.querySelectorAll('.screen-nav-tile');
+    const dockBtns = document.querySelectorAll('.nav-dock-btn');
+    const paneViews = {
+      nav: document.getElementById('paneNav'),
+      calib: document.getElementById('paneCalib'),
+      telemetry: document.getElementById('paneTelemetry'),
+      outage: document.getElementById('paneOutage'),
+      model: document.getElementById('paneModel')
+    };
+
+    const screenOrder = ['nav', 'calib', 'telemetry', 'outage', 'model'];
+    let currentScreenKey = 'nav';
+
+    function selectScreen(key) {
+      if (!paneViews[key] || key === currentScreenKey) return;
+      
+      const prevIdx = screenOrder.indexOf(currentScreenKey);
+      const nextIdx = screenOrder.indexOf(key);
+      const isForward = nextIdx >= prevIdx;
+      
+      const currentPane = paneViews[currentScreenKey];
+      const nextPane = paneViews[key];
+
+      // Synchronize sidebar tiles and bottom dock buttons
+      navTiles.forEach(t => t.classList.toggle('active', t.dataset.screen === key));
+      dockBtns.forEach(d => d.classList.toggle('active', d.dataset.tab === key));
+
+      // Directional slide transition
+      if (currentPane) {
+        currentPane.classList.remove('active-view');
+        currentPane.classList.add(isForward ? 'exit-left' : 'exit-right');
+        setTimeout(() => {
+          currentPane.classList.remove('exit-left', 'exit-right');
+        }, 380);
+      }
+
+      if (nextPane) {
+        // Set up starting position with transition disabled
+        nextPane.classList.remove('exit-left', 'exit-right', 'active-view');
+        nextPane.classList.add(isForward ? 'enter-right' : 'enter-left');
+        
+        // Force reflow so browser commits the initial offset
+        void nextPane.offsetWidth;
+        
+        // Activate fluid transition to active state
+        nextPane.classList.remove('enter-right', 'enter-left');
+        nextPane.classList.add('active-view');
+      }
+
+      currentScreenKey = key;
+    }
+
+    navTiles.forEach(t => t.addEventListener('click', () => selectScreen(t.dataset.screen)));
+    dockBtns.forEach(d => d.addEventListener('click', () => selectScreen(d.dataset.tab)));
+
+    // -------------------------------------------------------------
+    // TOAST NOTIFICATIONS
+    // -------------------------------------------------------------
+    const toast = document.getElementById('hudToast');
+    function triggerToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    document.querySelectorAll('.notif-bell-action').forEach(b => {
+      b.addEventListener('click', () => {
+        triggerToast("🔔 Telemetry Nominal • 14 Satellites Locked • 100 Hz Bus");
+      });
+    });
+
+    document.querySelectorAll('.section-menu-dots').forEach(d => {
+      d.addEventListener('click', () => {
+        triggerToast("⚙️ Feed Options • 100 Hz IMU Stream • Zero Odometry");
+      });
+    });
+
+    // -------------------------------------------------------------
+    // SCREEN 1: DRIVING HUD LOGIC
+    // -------------------------------------------------------------
+    let isNavigating = false;
+    let isBlackoutActive = false;
+    let heading = 0;
+    let speed = 0;
+    let simInterval = null;
+    let zoomLevel = 1.0;
+
+    const topPillBtn = document.getElementById('topPillBtn');
+    const statusPulseDot = document.getElementById('statusPulseDot');
+    const modeSubtitle = document.getElementById('modeSubtitle');
+    const speedDisplayNum = document.getElementById('speedDisplayNum');
+    const driftDisplayNum = document.getElementById('driftDisplayNum');
+    const startActionBtn = document.getElementById('startActionBtn');
+    const startActionText = document.getElementById('startActionText');
+    const vehiclePuck = document.getElementById('vehiclePuck');
+
+    // Refined Blackout Toggle (No Blocky Orange Boxes!)
+    function toggleTunnelBlackout(forceState) {
+      isBlackoutActive = (typeof forceState === 'boolean') ? forceState : !isBlackoutActive;
+      if (window.AndroidBridge && typeof window.AndroidBridge.toggleMockOutage === 'function') {
+        window.AndroidBridge.toggleMockOutage(isBlackoutActive);
+      }
+      const beacon = document.getElementById('outageBeaconIcon');
+      const title = document.getElementById('outageHeroTitle');
+      const sub = document.getElementById('outageHeroSub');
+      const switchBtn = document.getElementById('outageToggleSwitch');
+      const switchText = document.getElementById('outageSwitchText');
+
+      if (isBlackoutActive) {
+        statusPulseDot.className = "status-pulse-dot outage";
+        modeSubtitle.textContent = "DEAD RECKONING";
+        modeSubtitle.style.color = "var(--accent-crimson)";
+        driftDisplayNum.textContent = "2.4";
+        driftDisplayNum.style.color = "var(--accent-crimson)";
+
+        beacon.className = "state-beacon-circle outage";
+        beacon.textContent = "🚨";
+        title.textContent = "Tunnel Blackout Active";
+        sub.textContent = "GNSS Ingress • Inertial & ZUPT Clamped";
+        switchBtn.className = "switch-trigger-btn outage";
+        switchText.textContent = "Restore GNSS";
+
+        document.getElementById('nodeGnss').classList.remove('active');
+        document.getElementById('nodeDr').classList.add('active');
+        triggerToast("🚨 Tunnel Blackout: Inertial DR Active");
+      } else {
+        statusPulseDot.className = "status-pulse-dot";
+        modeSubtitle.textContent = isNavigating ? "GNSS LOCKED" : "INITIALIZING";
+        modeSubtitle.style.color = "var(--accent-blue)";
+        driftDisplayNum.textContent = "0.0";
+        driftDisplayNum.style.color = "var(--accent-emerald)";
+
+        beacon.className = "state-beacon-circle";
+        beacon.textContent = "🛰️";
+        title.textContent = "GNSS Signal Nominal";
+        sub.textContent = "Full 3D Satellite Constellation Active";
+        switchBtn.className = "switch-trigger-btn";
+        switchText.textContent = "Cut GNSS";
+
+        document.getElementById('nodeDr').classList.remove('active');
+        document.getElementById('nodeGnss').classList.add('active');
+        triggerToast("✅ GNSS Reacquired (2-Fix Hysteresis)");
+      }
+    }
+
+    topPillBtn.addEventListener('click', () => toggleTunnelBlackout());
+    document.getElementById('outageToggleSwitch').addEventListener('click', () => toggleTunnelBlackout());
+
+    document.getElementById('venueOriginTag').addEventListener('click', () => {
+      if (window.AndroidBridge && typeof window.AndroidBridge.setManualOrigin === 'function') {
+        window.AndroidBridge.setManualOrigin(28.6139, 77.2090);
+      }
+      triggerToast("📍 Venue P₀ Anchored (28.6139°, 77.2090°)");
+    });
+    document.getElementById('anchorP0Btn').addEventListener('click', () => {
+      if (window.AndroidBridge && typeof window.AndroidBridge.setManualOrigin === 'function') {
+        window.AndroidBridge.setManualOrigin(28.6139, 77.2090);
+      }
+      triggerToast("📍 Venue P₀ Anchored at Exhibition Hall");
+    });
+
+    startActionBtn.addEventListener('click', () => {
+      isNavigating = !isNavigating;
+      if (window.AndroidBridge && typeof window.AndroidBridge.toggleNavigation === 'function') {
+        window.AndroidBridge.toggleNavigation(isNavigating);
+      }
+      if (isNavigating) {
+        startActionText.textContent = "STOP";
+        startActionBtn.classList.add('running');
+        triggerToast("🚀 Tracking Active • 10 Hz Fusion Loop");
+        startSim();
+      } else {
+        startActionText.textContent = "START";
+        startActionBtn.classList.remove('running');
+        speedDisplayNum.textContent = "0";
+        stopSim();
+      }
+    });
+
+    document.getElementById('quickCalibBtn').addEventListener('click', () => selectScreen('calib'));
+
+    // Zoom Controls
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      zoomLevel = Math.min(zoomLevel + 0.2, 1.8);
+      vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+    });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      zoomLevel = Math.max(zoomLevel - 0.2, 0.6);
+      vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+    });
+
+    function startSim() {
+      if (simInterval) clearInterval(simInterval);
+      simInterval = setInterval(() => {
+        heading = (heading + 0.4) % 360;
+        speed = isBlackoutActive ? 16.5 : 18.2;
+        const kmh = (speed * 3.6).toFixed(0);
+        speedDisplayNum.textContent = kmh;
+        vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+
+        // Update Oscilloscope meters
+        const rnd = (Math.random() - 0.5);
+        document.getElementById('valAccX').textContent = (rnd * 0.08).toFixed(2);
+        document.getElementById('valAccY').textContent = (speed * 0.05 + rnd * 0.04).toFixed(2);
+        document.getElementById('valGyrZ').textContent = (rnd * 0.03).toFixed(2);
+
+        document.getElementById('barAccX').style.width = `${Math.min(100, Math.abs(rnd * 200))}%`;
+        document.getElementById('barAccY').style.width = `${Math.min(100, (speed * 4))}%`;
+        document.getElementById('barGyrZ').style.width = `${Math.min(100, Math.abs(rnd * 300))}%`;
+      }, 100);
+    }
+
+    function stopSim() {
+      if (simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // SCREEN 2: INCLINOMETER CALIBRATION
+    // -------------------------------------------------------------
+    const calibBtn = document.getElementById('runCalibActionBtn');
+    const calibBtnText = document.getElementById('calibBtnText') || calibBtn;
+    const bubble = document.getElementById('bubbleLevel');
+    const calibBar = document.getElementById('calibProgBar');
+
+    calibBtn.addEventListener('click', () => {
+      if (window.AndroidBridge && typeof window.AndroidBridge.calibrate === 'function') {
+        window.AndroidBridge.calibrate();
+      }
+      calibBtn.disabled = true;
+      calibBtn.classList.remove('locked');
+      calibBtnText.textContent = "SAMPLING GRAVITY...";
+      calibBar.style.width = "0%";
+
+      let p = 0;
+      const t = setInterval(() => {
+        p += 10;
+        calibBar.style.width = `${p}%`;
+        bubble.style.transform = `translate(${(Math.random()-0.5)*14}px, ${(Math.random()-0.5)*14}px)`;
+
+        if (p >= 100) {
+          clearInterval(t);
+          bubble.style.transform = "translate(0, 0)";
+          calibBtn.disabled = false;
+          calibBtnText.textContent = "ALIGNMENT LOCKED (+Y)";
+          calibBtn.classList.add('locked');
+          triggerToast("🎉 In-Vehicle Axis Calibrated!");
+        }
+      }, 120);
+    });
+
+    // -------------------------------------------------------------
+    // REAL-TIME ANDROID TELEMETRY LISTENER
+    // -------------------------------------------------------------
+    window.onAndroidTelemetry = function(data) {
+      if (!data) return;
+      if (typeof data.speedKmh !== 'undefined') {
+        const speedEl = document.getElementById('speedDisplayNum');
+        if (speedEl) speedEl.textContent = Math.round(data.speedKmh);
+      }
+      if (typeof data.driftPercent !== 'undefined') {
+        const driftEl = document.getElementById('driftDisplayNum');
+        if (driftEl) driftEl.textContent = Number(data.driftPercent).toFixed(1);
+      }
+      if (typeof data.distanceM !== 'undefined') {
+        const distEl = document.getElementById('distDisplayNum');
+        if (distEl) distEl.textContent = Math.round(data.distanceM);
+      }
+      if (typeof data.headingDeg !== 'undefined') {
+        heading = Number(data.headingDeg);
+        const puck = document.getElementById('vehiclePuck');
+        if (puck) puck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+      }
+      if (data.mode) {
+        const modeEl = document.getElementById('modeSubtitle');
+        if (modeEl) modeEl.textContent = data.mode;
+      }
+      if (typeof data.isOutage !== 'undefined' && data.isOutage !== isBlackoutActive) {
+        toggleTunnelBlackout(Boolean(data.isOutage));
+      }
+      if (typeof data.accX !== 'undefined') {
+        const ax = document.getElementById('valAccX');
+        if (ax) ax.textContent = Number(data.accX).toFixed(2);
+      }
+      if (typeof data.accY !== 'undefined') {
+        const ay = document.getElementById('valAccY');
+        if (ay) ay.textContent = Number(data.accY).toFixed(2);
+      }
+      if (typeof data.gyrZ !== 'undefined') {
+        const gz = document.getElementById('valGyrZ');
+        if (gz) gz.textContent = Number(data.gyrZ).toFixed(2);
+      }
+    };
+
+    // Auto-detect Android App environment
+    if (window.AndroidBridge || navigator.userAgent.includes('Android') || window.innerWidth <= 680) {
+      document.body.classList.add('is-android-app');
+    }
+  </script>
+</body>
+</html>
