@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Alpine Track — Mobile Navigation Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* -------------------------------------------------------------
+       DESIGN SYSTEM: TOKENS & BASE RESETS
+       ------------------------------------------------------------- */
+    :root {
+      /* Colors */
+      --color-canvas-bg: #f7f9fc;
+      --color-canvas-gradient: linear-gradient(180deg, #edf2f7 0%, #f7f9fc 45%, #ffffff 100%);
+      --color-card-bg: #ffffff;
+      --color-sheet-bg: rgba(255, 255, 255, 0.94);
+      
+      --color-primary-cerulean: #111418;
+      --color-primary-hover: #1c2128;
+      --color-primary-light: #f3fcd4;
+      --color-accent-lime: #cbf338;
+      
+      --color-accent-crimson: #e11d48;
+      --color-accent-crimson-light: rgba(225, 29, 72, 0.12);
+      
+      --color-ink-heavy: #111418;
+      --color-ink-body: #3b4351;
+      --color-ink-muted: #6b7787;
+      --color-ink-subtle: #98a3b3;
+      
+      --color-border-subtle: #f1f5f9;
+      --color-border-light: #e2e8f0;
+
+      /* Shadows & Elevations */
+      --shadow-card: 0 10px 25px -4px rgba(18, 24, 38, 0.05), 0 4px 10px -2px rgba(18, 24, 38, 0.02);
+      --shadow-floating: 0 12px 28px -4px rgba(18, 24, 38, 0.12), 0 4px 12px -2px rgba(18, 24, 38, 0.06);
+      --shadow-sheet: 0 -12px 35px -5px rgba(18, 24, 38, 0.08);
+
+      /* Radii */
+      --radius-sheet: 36px;
+      --radius-card: 22px;
+      --radius-pill: 9999px;
+      --radius-button: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #eef2f6;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      color: var(--color-ink-body);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(203, 243, 56, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(2, 132, 199, 0.04) 0px, transparent 50%);
+    }
+
+    /* -------------------------------------------------------------
+       DEVICE WRAPPER & RESPONSIVE CONTAINER
+       ------------------------------------------------------------- */
+    .mobile-viewport {
+      width: 100%;
+      max-width: 412px;
+      height: 870px;
+      background: var(--color-canvas-gradient);
+      border-radius: 46px;
+      box-shadow: 0 35px 80px rgba(18, 24, 38, 0.14), 0 0 0 10px #ffffff, 0 0 0 12px #e2e8f0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Status Bar */
+    .mobile-status-bar {
+      height: 44px;
+      padding: 12px 24px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-ink-heavy);
+      z-index: 40;
+    }
+
+    .status-left-time {
+      letter-spacing: -0.2px;
+    }
+
+    .status-right-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    /* -------------------------------------------------------------
+       CANVAS & TOPOGRAPHIC 3D TERRAIN BACKGROUND
+       ------------------------------------------------------------- */
+    .canvas-background {
+      position: absolute;
+      inset: 0;
+      height: 380px;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .terrain-svg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* -------------------------------------------------------------
+       FLOATING MAP CONTROLS OVER BACKGROUND CANVAS
+       ------------------------------------------------------------- */
+    .floating-map-controls {
+      position: absolute;
+      top: 56px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 30;
+    }
+
+    .floating-ctrl-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: var(--shadow-floating);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-ink-heavy);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .floating-ctrl-btn:hover {
+      background: #ffffff;
+      transform: translateY(-2px) scale(1.04);
+      color: var(--color-primary-cerulean);
+    }
+
+    .floating-ctrl-btn:active {
+      transform: scale(0.95);
+    }
+
+    .floating-ctrl-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2;
+    }
+
+    /* -------------------------------------------------------------
+       DRAGGABLE BOTTOM SHEET OVERLAY (GLASSMORPHIC)
+       ------------------------------------------------------------- */
+    .bottom-sheet-overlay {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 64px; /* Sits directly above bottom nav */
+      top: 175px;
+      background: var(--color-sheet-bg);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-top-left-radius: var(--radius-sheet);
+      border-top-right-radius: var(--radius-sheet);
+      box-shadow: var(--shadow-sheet);
+      border-top: 1px solid rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+    }
+
+    /* Grabber Pill */
+    .sheet-grabber-area {
+      height: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      flex-shrink: 0;
+    }
+
+    .grabber-pill {
+      width: 42px;
+      height: 5px;
+      background: #cbd5e1;
+      border-radius: var(--radius-pill);
+      transition: background-color 0.2s;
+    }
+
+    .sheet-grabber-area:hover .grabber-pill {
+      background: #94a3b8;
+    }
+
+    /* Scrollable Vertical Feed of Cards */
+    .sheet-scroll-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 18px 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: none;
+    }
+
+    .sheet-scroll-feed::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* -------------------------------------------------------------
+       MODULAR CARDS (CLEAN WHITE ON SOFT BACKGROUND)
+       ------------------------------------------------------------- */
+    .dashboard-card {
+      background: var(--color-card-bg);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dashboard-card:hover {
+      box-shadow: 0 14px 30px -4px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Card 1: Session Header & Primary Action */
+    .session-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-primary-light);
+      color: var(--color-primary-cerulean);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .session-badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--color-primary-cerulean);
+      border-radius: 50%;
+    }
+
+    .session-title {
+      font-size: 23px;
+      font-weight: 800;
+      color: var(--color-ink-heavy);
+      letter-spacing: -0.6px;
+      line-height: 1.25;
+    }
+
+    .session-subtitle {
+      font-size: 13px;
+      color: var(--color-ink-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* Buttons: Primary & Secondary Pills */
+    .actions-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn-primary-wide {
+      width: 100%;
+      height: 52px;
+      border-radius: var(--radius-button);
+      background: var(--color-primary-cerulean);
+      color: #ffffff;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px -3px rgba(2, 132, 199, 0.38);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-primary-wide:hover {
+      background: var(--color-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px -2px rgba(2, 132, 199, 0.45);
+    }
+
+    .btn-primary-wide:active {
+      transform: scale(0.98);
+    }
+
+    .secondary-pills-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-pill-secondary {
+      flex: 1;
+      height: 40px;
+      border-radius: var(--radius-pill);
+      background: #f8fafc;
+      color: var(--color-ink-body);
+      border: 1px solid var(--color-border-light);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-pill-secondary:hover {
+      background: #f1f5f9;
+      color: var(--color-ink-heavy);
+      border-color: #cbd5e1;
+    }
+
+    .btn-pill-secondary:active {
+      transform: scale(0.97);
+    }
+
+    /* -------------------------------------------------------------
+       DENSE SESSION STATS: 2x3 HIGH-CONTRAST GRID
+       ------------------------------------------------------------- */
+    .section-title-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--color-ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+
+    .stats-grid-2x3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-cell {
+      background: #f8fafc;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .stat-cell:hover {
+      background: #ffffff;
+      border-color: var(--color-border-light);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      transform: translateY(-1px);
+    }
+
+    .stat-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--color-ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .stat-metric-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .stat-number {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--color-ink-heavy);
+      letter-spacing: -0.6px;
+      line-height: 1.1;
+    }
+
+    .stat-unit {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--color-ink-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Critical Stat Highlight (Crimson Red) */
+    .stat-cell.highlight-crimson .stat-number {
+      color: var(--color-accent-crimson);
+    }
+
+    .stat-cell.highlight-crimson .stat-unit {
+      color: var(--color-accent-crimson);
+      opacity: 0.85;
+    }
+
+    /* -------------------------------------------------------------
+       MINIMALISTIC AREA GRAPH (ELEVATION PROFILE)
+       ------------------------------------------------------------- */
+    .graph-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+
+    .graph-peak-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .graph-peak-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--color-accent-crimson);
+      letter-spacing: -0.3px;
+    }
+
+    .graph-peak-sub {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--color-ink-muted);
+      letter-spacing: 0.4px;
+    }
+
+    .graph-svg-container {
+      width: 100%;
+      height: 120px;
+      margin: 8px 0;
+      position: relative;
+    }
+
+    .graph-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .graph-axis-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--color-ink-subtle);
+      margin-top: 4px;
+    }
+
+    /* -------------------------------------------------------------
+       PERSISTENT BOTTOM NAVIGATION BAR
+       ------------------------------------------------------------- */
+    .bottom-nav-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      height: 56px;
+      background: #111418;
+      border-radius: var(--radius-pill);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 6px;
+      z-index: 50;
+      box-shadow: 0 16px 36px rgba(17, 20, 24, 0.22);
+      border: none;
+    }
+
+    .nav-tab-item {
+      flex: 1;
+      height: 42px;
+      background: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      transition: all 0.2s ease;
+      border-radius: var(--radius-pill);
+      text-decoration: none;
+    }
+
+    .nav-tab-item svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab-item:hover {
+      color: #ffffff;
+    }
+
+    .nav-tab-item.active-tab {
+      background: #cbf338;
+      color: #111418;
+    }
+
+    .nav-tab-item.active-tab svg {
+      stroke: #111418;
+      stroke-width: 2.4;
+    }
+
+    .nav-tab-item.active-tab svg {
+      stroke: var(--color-primary-cerulean);
+      stroke-width: 2.3;
+      transform: translateY(-1px);
+    }
+
+    /* Record Button (Accented Center Tab) */
+    .nav-tab-item.record-center {
+      position: relative;
+    }
+
+    .record-circle-badge {
+      width: 32px;
+      height: 32px;
+      background: var(--color-primary-cerulean);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+      margin-bottom: 1px;
+      transition: all 0.2s;
+    }
+
+    .nav-tab-item.record-center:hover .record-circle-badge {
+      transform: scale(1.08);
+      background: var(--color-primary-hover);
+    }
+
+    .nav-tab-item.record-center svg {
+      stroke: #ffffff;
+      width: 17px;
+      height: 17px;
+    }
+
+    /* Android Home Navigation Line */
+    .android-home-line-container {
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 60;
+    }
+
+    .android-home-pill {
+      width: 100px;
+      height: 4px;
+      background: #cbd5e1;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MOBILE-FIRST VIEWPORT SHELL -->
+  <main class="mobile-viewport">
+
+    <!-- 1. System Status Bar -->
+    <header class="mobile-status-bar">
+      <span class="status-left-time">9:41</span>
+      <div class="status-right-icons">
+        <svg width="15" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <rect x="0" y="8" width="3" height="4" rx="0.5"/>
+          <rect x="4.5" y="5" width="3" height="7" rx="0.5"/>
+          <rect x="9" y="2.5" width="3" height="9.5" rx="0.5"/>
+          <rect x="13.5" y="0" width="2.5" height="12" rx="0.5"/>
+        </svg>
+        <span>5G</span>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="currentColor">
+          <rect x="1" y="1" width="19" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="3" y="3" width="14" height="6" rx="1.5"/>
+          <path d="M21 4.5 C22 4.5 22.5 5 22.5 6 C22.5 7 22 7.5 21 7.5" fill="currentColor"/>
+        </svg>
+      </div>
+    </header>
+
+    <!-- 2. Edge-to-Edge Canvas Background (Topographic Relief Terrain Map) -->
+    <div class="canvas-background">
+      <svg class="terrain-svg" viewBox="0 0 400 380" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.9"/>
+            <stop offset="60%" stop-color="#e0f2fe" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="peakShade" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#0284c7" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Sky Background -->
+        <rect width="400" height="380" fill="url(#skyGrad)"/>
+
+        <!-- Mountain Ridges / Contours -->
+        <path d="M-20 220 L60 140 L160 190 L240 110 L330 170 L420 120 L420 380 L-20 380 Z" fill="url(#peakShade)"/>
+        <path d="M-20 250 L80 180 L180 230 L270 160 L350 210 L420 170 L420 380 L-20 380 Z" fill="rgba(255, 255, 255, 0.45)"/>
+        
+        <!-- Elevation Contour Lines -->
+        <path d="M0 160 Q100 130 200 170 T400 130" fill="none" stroke="rgba(2, 132, 199, 0.15)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M0 190 Q120 160 220 200 T400 160" fill="none" stroke="rgba(2, 132, 199, 0.18)" stroke-width="1.5"/>
+        <path d="M0 220 Q140 190 250 230 T400 190" fill="none" stroke="rgba(2, 132, 199, 0.22)" stroke-width="1.5"/>
+        
+        <!-- Waypoint Flag Marker -->
+        <circle cx="240" cy="110" r="5" fill="#e11d48"/>
+        <circle cx="240" cy="110" r="10" fill="none" stroke="#e11d48" stroke-width="1.5" opacity="0.6"/>
+        <line x1="240" y1="110" x2="240" y2="128" stroke="#0f172a" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <!-- 3. Floating Map Controls (Top Right) -->
+    <aside class="floating-map-controls" aria-label="Map controls">
+      <button class="floating-ctrl-btn" title="Toggle 2D / 3D Perspective">
+        <span>3D</span>
+      </button>
+      <button class="floating-ctrl-btn" title="Map Layers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+      </button>
+      <button class="floating-ctrl-btn" title="Recenter Track">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+        </svg>
+      </button>
+    </aside>
+
+    <!-- 4. Draggable Bottom Sheet with Glassmorphic Blur -->
+    <section class="bottom-sheet-overlay" aria-label="Dashboard content">
+      
+      <!-- Grabber Pill -->
+      <div class="sheet-grabber-area">
+        <div class="grabber-pill"></div>
+      </div>
+
+      <!-- Modular Scrollable Dashboard Cards Feed -->
+      <div class="sheet-scroll-feed">
+
+        <!-- Card 1: Session Overview & Main Action -->
+        <article class="dashboard-card">
+          <div class="session-header-row">
+            <div>
+              <span class="session-badge">
+                <span class="session-badge-dot"></span>
+                ACTIVE RECORDING
+              </span>
+              <h2 class="session-title" style="margin-top: 8px;">Mount Rainier Peak Loop</h2>
+              <p class="session-subtitle">Paradise Glacier Trail • Alpine Segment</p>
+            </div>
+          </div>
+
+          <!-- Primary CTA Button (Large Cerulean Blue) & Secondary Pills -->
+          <div class="actions-group">
+            <button class="btn-primary-wide">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <span>Resume Tracking Session</span>
+            </button>
+            <div class="secondary-pills-row">
+              <button class="btn-pill-secondary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                  <polyline points="16 6 12 2 8 6"/>
+                  <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+                <span>Share Route</span>
+              </button>
+              <button class="btn-pill-secondary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Save Offline</span>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2: Minimalist Area Graph (Elevation Profile) -->
+        <article class="dashboard-card">
+          <div class="graph-card-header">
+            <div>
+              <div class="section-title-label" style="margin-bottom: 2px;">ELEVATION PROFILE</div>
+              <h3 style="font-size: 16px; font-weight: 800; color: var(--color-ink-heavy);">Vertical Progression</h3>
+            </div>
+            <div class="graph-peak-badge">
+              <span class="graph-peak-val">11,249 <span style="font-size: 11px; font-weight: 700;">FT</span></span>
+              <span class="graph-peak-sub">MAX PEAK</span>
+            </div>
+          </div>
+
+          <!-- Area Graph with Solid Crimson Fill & Crisp Top Stroke -->
+          <div class="graph-svg-container">
+            <svg class="graph-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="crimsonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#e11d48" stop-opacity="0.32"/>
+                  <stop offset="85%" stop-color="#e11d48" stop-opacity="0.04"/>
+                  <stop offset="100%" stop-color="#e11d48" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Filled Area (Solid/Subtle Crimson Area) -->
+              <polygon points="0,95 30,82 70,68 120,72 170,42 220,18 270,35 310,50 340,38 340,100 0,100" fill="url(#crimsonGradient)"/>
+
+              <!-- Crisp Top Profile Line -->
+              <polyline points="0,95 30,82 70,68 120,72 170,42 220,18 270,35 310,50 340,38" fill="none" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- Highest Elevation Marker Point -->
+              <circle cx="220" cy="18" r="4.5" fill="#e11d48"/>
+              <circle cx="220" cy="18" r="8" fill="none" stroke="#e11d48" stroke-width="1.5" opacity="0.4"/>
+            </svg>
+          </div>
+
+          <!-- X-Axis Labels -->
+          <div class="graph-axis-labels">
+            <span>0.0 MI</span>
+            <span>4.5 MI</span>
+            <span>9.2 MI (PEAK)</span>
+            <span>14.2 MI</span>
+          </div>
+        </article>
+
+        <!-- Card 3: Dense Session Statistics 2x3 Grid -->
+        <article class="dashboard-card">
+          <div class="section-title-label">SESSION METRICS</div>
+          
+          <div class="stats-grid-2x3">
+            
+            <!-- Stat 1: Vertical Gain -->
+            <div class="stat-cell">
+              <span class="stat-title">VERTICAL GAIN</span>
+              <div class="stat-metric-row">
+                <span class="stat-number">6,417</span>
+                <span class="stat-unit">FT</span>
+              </div>
+            </div>
+
+            <!-- Stat 2: Total Distance -->
+            <div class="stat-cell">
+              <span class="stat-title">TOTAL DISTANCE</span>
+              <div class="stat-metric-row">
+                <span class="stat-number">14.2</span>
+                <span class="stat-unit">MI</span>
+              </div>
+            </div>
+
+            <!-- Stat 3: Elapsed Duration -->
+            <div class="stat-cell">
+              <span class="stat-title">ACTIVE DURATION</span>
+              <div class="stat-metric-row">
+                <span class="stat-number">3h 48m</span>
+                <span class="stat-unit">TIME</span>
+              </div>
+            </div>
+
+            <!-- Stat 4: Max Speed (Crimson Highlight) -->
+            <div class="stat-cell highlight-crimson">
+              <span class="stat-title">TOP SPEED</span>
+              <div class="stat-metric-row">
+                <span class="stat-number">38.4</span>
+                <span class="stat-unit">MPH</span>
+              </div>
+            </div>
+
+            <!-- Stat 5: Max Elevation -->
+            <div class="stat-cell">
+              <span class="stat-title">MAX ELEVATION</span>
+              <div class="stat-metric-row">
+                <span class="stat-number">11,249</span>
+                <span class="stat-unit">FT</span>
+              </div>
+            </div>
+
+            <!-- Stat 6: Estimated Calories -->
+            <div class="stat-cell">
+              <span class="stat-title">ENERGY BURNED</span>
+              <div class="stat-metric-row">
+                <span class="stat-number">2,180</span>
+                <span class="stat-unit">CAL</span>
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+        <!-- Card 4: Environmental Conditions & Hardware Sensor Status -->
+        <article class="dashboard-card">
+          <div class="section-title-label">ENVIRONMENT &amp; HARDWARE</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 800; color: var(--color-ink-heavy);">Alpine Ridge Highpass</div>
+              <div style="font-size: 12px; color: var(--color-ink-muted); margin-top: 2px;">Packed Powder • 24°F • Visibility 8 MI</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 12px; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 4px 8px; border-radius: 8px;">GNSS 3D FIX</span>
+              <div style="font-size: 11px; color: var(--color-ink-muted); margin-top: 4px;">HDOP: 0.8 • 14 Sats</div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 5. Persistent Bottom Navigation Bar -->
+    <nav class="bottom-nav-bar" aria-label="Primary navigation">
+      
+      <!-- Tab 1: Logbook -->
+      <button class="nav-tab-item active-tab">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span>Logbook</span>
+      </button>
+
+      <!-- Tab 2: Resorts -->
+      <button class="nav-tab-item">
+        <svg viewBox="0 0 24 24">
+          <polygon points="3 20 9 8 13 14 17 9 21 20 3 20"/>
+        </svg>
+        <span>Resorts</span>
+      </button>
+
+      <!-- Tab 3: Record (Center Accented Action) -->
+      <button class="nav-tab-item record-center">
+        <div class="record-circle-badge">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="6" fill="currentColor"/>
+          </svg>
+        </div>
+        <span>Record</span>
+      </button>
+
+      <!-- Tab 4: Friends -->
+      <button class="nav-tab-item">
+        <svg viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Friends</span>
+      </button>
+
+      <!-- Tab 5: Account -->
+      <button class="nav-tab-item">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Account</span>
+      </button>
+
+    </nav>
+
+    <!-- Android Home Indicator Pill -->
+    <div class="android-home-line-container">
+      <div class="android-home-pill"></div>
+    </div>
+
+  </main>
+
+</body>
+</html>
