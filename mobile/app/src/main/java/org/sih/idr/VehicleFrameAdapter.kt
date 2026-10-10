@@ -1,6 +1,5 @@
 package org.sih.idr
 
-import kotlin.math.cos
 import kotlin.math.sin
 
 data class VehicleImuSample(
@@ -18,42 +17,60 @@ enum class DeviceForwardAxis {
 }
 
 class VehicleFrameAdapter {
-    private var vehicleHeadingRad: Double? = null
+    private var isCalibrated = false
     private var deviceForwardAxis = DeviceForwardAxis.POSITIVE_Y
+    private var pitchRad = 0.0
+    private var rollRad = 0.0
 
+    fun configure(
+        forwardAxis: DeviceForwardAxis = DeviceForwardAxis.POSITIVE_Y,
+        pitchRad: Double = 0.0,
+        rollRad: Double = 0.0,
+    ) {
+        require(pitchRad.isFinite()) { "pitch must be finite" }
+        require(rollRad.isFinite()) { "roll must be finite" }
+        this.deviceForwardAxis = forwardAxis
+        this.pitchRad = pitchRad
+        this.rollRad = rollRad
+        this.isCalibrated = true
+    }
+
+    // Overload for compatibility
     fun configure(
         vehicleHeadingRad: Double,
         forwardAxis: DeviceForwardAxis = DeviceForwardAxis.POSITIVE_Y,
     ) {
-        require(vehicleHeadingRad.isFinite()) { "vehicle heading must be finite" }
-        this.vehicleHeadingRad = vehicleHeadingRad
-        this.deviceForwardAxis = forwardAxis
+        configure(forwardAxis = forwardAxis, pitchRad = 0.0, rollRad = 0.0)
     }
 
-    fun isConfigured(): Boolean = vehicleHeadingRad != null
+    fun isConfigured(): Boolean = isCalibrated
 
     fun reset() {
-        vehicleHeadingRad = null
+        isCalibrated = false
         deviceForwardAxis = DeviceForwardAxis.POSITIVE_Y
+        pitchRad = 0.0
+        rollRad = 0.0
     }
 
     fun adapt(sample: PhoneSensorSample): VehicleImuSample {
-        val heading = vehicleHeadingRad
-            ?: throw IllegalStateException("vehicle frame is not calibrated")
-        val deviceForward = when (deviceForwardAxis) {
-            DeviceForwardAxis.POSITIVE_X -> 0.0
-            DeviceForwardAxis.NEGATIVE_X -> Math.PI
-            DeviceForwardAxis.POSITIVE_Y -> Math.PI / 2.0
-            DeviceForwardAxis.NEGATIVE_Y -> -Math.PI / 2.0
+        if (!isCalibrated) {
+            throw IllegalStateException("vehicle frame is not calibrated")
         }
-        val projectionAngle = heading - deviceForward
-        val forwardX = cos(projectionAngle)
-        val forwardY = sin(projectionAngle)
-        val forwardAcceleration =
-            sample.accelerationX * forwardX + sample.accelerationY * forwardY
+        // Extract raw acceleration along the phone axis aligned with the vehicle forward direction.
+        // Forward acceleration is an internal chassis measurement that does NOT rotate with compass heading.
+        val rawForward = when (deviceForwardAxis) {
+            DeviceForwardAxis.POSITIVE_X -> sample.accelerationX.toDouble()
+            DeviceForwardAxis.NEGATIVE_X -> -sample.accelerationX.toDouble()
+            DeviceForwardAxis.POSITIVE_Y -> sample.accelerationY.toDouble()
+            DeviceForwardAxis.NEGATIVE_Y -> -sample.accelerationY.toDouble()
+        }
+        // Static gravity compensation along the vehicle longitudinal axis (pitch angle)
+        val gravityForwardOffset = 9.80665 * sin(pitchRad)
+        val forwardAcceleration = rawForward - gravityForwardOffset
+
         return VehicleImuSample(
             timestampSeconds = sample.timestampNanos / NANOS_PER_SECOND,
-            forwardAccelerationMps2 = forwardAcceleration.toDouble(),
+            forwardAccelerationMps2 = forwardAcceleration,
             yawRateRps = sample.yawRateZ.toDouble(),
             location = sample.location,
         )

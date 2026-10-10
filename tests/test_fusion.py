@@ -135,6 +135,30 @@ class FusionTests(unittest.TestCase):
         self.assertAlmostEqual(matches[0].x_m, 4.0)  # type: ignore[union-attr]
         self.assertAlmostEqual(matches[1].x_m, 14.0)  # type: ignore[union-attr]
 
+    def test_zupt_clamps_stationary_drift(self) -> None:
+        engine = FusionEngine()
+        # Initialize at 0 speed
+        engine.update(SensorFrame(ImuSample(0.0, 0.0, 0.0), GnssFix(0.0, 0.0, 0.0, speed_mps=0.0)))
+        # Vehicle is idling at standstill; small accelerometer noise
+        for step in range(1, 10):
+            state = engine.update(SensorFrame(ImuSample(step * 0.1, 0.05, 0.001)))
+            self.assertEqual(state.speed_mps, 0.0)
+            self.assertEqual(state.x_m, 0.0)
+
+    def test_speed_override_correction_blends_into_state(self) -> None:
+        class SpeedModelCorrection:
+            def predict(self, frame: SensorFrame) -> FusionCorrection:
+                return FusionCorrection(speed_override_mps=10.0)
+
+        engine = FusionEngine(
+            FusionConfig(outage_confirm_s=0.0),
+            correction_model=SpeedModelCorrection(),
+        )
+        engine.update(SensorFrame(ImuSample(0.0, 0.0, 0.0), GnssFix(0.0, 0.0, 0.0, speed_mps=0.0)))
+        state = engine.update(SensorFrame(ImuSample(0.5, 0.0, 0.0)))
+        self.assertGreater(state.speed_mps, 0.0)
+        self.assertLessEqual(state.speed_mps, 10.0)
+
 
 if __name__ == "__main__":
     unittest.main()

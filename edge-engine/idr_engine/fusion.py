@@ -17,6 +17,7 @@ class FusionCorrection:
     acceleration_scale: float = 1.0
     yaw_rate_bias_rps: float = 0.0
     gnss_gain: float = 1.0
+    speed_override_mps: float | None = None
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.acceleration_scale <= 2.0:
@@ -25,6 +26,9 @@ class FusionCorrection:
             raise ValueError("yaw_rate_bias_rps must be finite")
         if not 0.0 < self.gnss_gain <= 1.0:
             raise ValueError("gnss_gain must be in (0, 1]")
+        if self.speed_override_mps is not None:
+            if not math.isfinite(self.speed_override_mps) or self.speed_override_mps < 0.0:
+                raise ValueError("speed_override_mps must be non-negative and finite")
 
 
 class FusionCorrectionModel(Protocol):
@@ -153,6 +157,14 @@ class FusionEngine:
             * correction.acceleration_scale
             * dt_s,
         )
+        if correction.speed_override_mps is not None:
+            self._speed_mps = max(0.0, self._speed_mps * 0.8 + correction.speed_override_mps * 0.2)
+        if (
+            self._speed_mps < 0.3
+            and abs(frame.imu.forward_acceleration_mps2) < 0.15
+            and abs(frame.imu.yaw_rate_rps) < 0.05
+        ):
+            self._speed_mps = 0.0
         distance_m = self._speed_mps * dt_s
         self._x_m += math.cos(self._heading_rad) * distance_m
         self._y_m += math.sin(self._heading_rad) * distance_m

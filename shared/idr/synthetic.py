@@ -12,6 +12,7 @@ def straight_line_trace(
     speed_mps: float = 10.0,
     outage_start_s: float = 3.0,
     outage_end_s: float = 7.0,
+    bearing_deg: float | None = 90.0,
 ) -> list[SensorFrame]:
     if sample_count < 2 or rate_hz <= 0.0 or speed_mps < 0.0:
         raise ValueError("sample_count must be >= 2, rate_hz must be positive, and speed non-negative")
@@ -26,6 +27,7 @@ def straight_line_trace(
                 latitude_deg=0.0,
                 longitude_deg=x_m / METERS_PER_DEGREE,
                 speed_mps=speed_mps,
+                bearing_deg=bearing_deg,
             )
         frames.append(
             SensorFrame(

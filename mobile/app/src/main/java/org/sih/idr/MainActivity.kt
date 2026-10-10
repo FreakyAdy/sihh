@@ -15,6 +15,7 @@ class MainActivity : AppCompatActivity() {
     private val vehicleCalibration = VehicleCalibration()
     private val navigationEngine = NativeNavigationEngine()
     private var sampleCount = 0L
+    private var lastUiUpdateMillis = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,37 +31,55 @@ class MainActivity : AppCompatActivity() {
                     if (calibrationResult != null) {
                         navigationEngine.reset()
                         vehicleFrameAdapter.configure(
-                            calibrationResult.vehicleHeadingRad,
-                            calibrationResult.forwardAxis,
+                            forwardAxis = calibrationResult.forwardAxis,
+                            pitchRad = calibrationResult.pitchRad,
+                            rollRad = calibrationResult.rollRad,
                         )
                     }
-                    var diagnostic = "Diagnostics: $sampleCount samples received"
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    if (now - lastUiUpdateMillis < 100L) {
+                        return
+                    }
+                    lastUiUpdateMillis = now
+
+                    var positionText: String
+                    var modeText: String
+                    var diagnostic = "Diagnostics: $sampleCount samples received (10 Hz display)"
+
                     try {
                         if (vehicleFrameAdapter.isConfigured()) {
                             val estimate = navigationEngine.update(vehicleFrameAdapter.adapt(sample))
-                            binding.position.text = estimate.latitude?.let { latitude ->
+                            positionText = estimate.latitude?.let { latitude ->
                                 "Position: %.5f, %.5f".format(latitude, estimate.longitude)
                             } ?: "Position: waiting for GNSS origin"
-                            binding.mode.text =
-                                "Mode: ${estimate.mode.name.replace('_', ' ')} " +
-                                    "(confidence %.2f)".format(estimate.confidence)
+                            modeText = "Mode: ${estimate.mode.name.replace('_', ' ')} (confidence %.2f)".format(estimate.confidence)
                         } else {
-                            binding.position.text = sample.location?.let {
+                            positionText = sample.location?.let {
                                 "GNSS: %.5f, %.5f".format(it.latitude, it.longitude)
                             } ?: "GNSS: waiting for fix"
-                            binding.mode.text =
-                                "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
+                            modeText = "Mode: Calibration ${vehicleCalibration.stage.name.lowercase()}"
                         }
                     } catch (error: IllegalArgumentException) {
+                        positionText = "Position: error"
+                        modeText = "Mode: Error"
                         diagnostic = "Diagnostics: rejected sensor sample (${error.message})"
                     } catch (error: IllegalStateException) {
+                        positionText = "Position: unavailable"
+                        modeText = "Mode: Error"
                         diagnostic = "Diagnostics: navigation unavailable (${error.message})"
                     }
-                    binding.diagnostics.text = diagnostic
+
+                    runOnUiThread {
+                        binding.position.text = positionText
+                        binding.mode.text = modeText
+                        binding.diagnostics.text = diagnostic
+                    }
                 }
 
                 override fun onHealthChanged(message: String) {
-                    binding.diagnostics.text = "Diagnostics: $message"
+                    runOnUiThread {
+                        binding.diagnostics.text = "Diagnostics: $message"
+                    }
                 }
             },
         )

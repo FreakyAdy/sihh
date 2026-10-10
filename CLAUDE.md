@@ -11,10 +11,10 @@ This project uses zone-based ownership for multi-developer AI collaboration.
 
 | Zone | Owner | Paths | Notes |
 |------|-------|-------|-------|
-| ml | _unclaimed_ | ml/ | IO-VNBD ingestion, preprocessing, training, evaluation, and model exports |
-| engine | _unclaimed_ | edge-engine/ | Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters |
+| ml | @FreakyAdy | ml/ | IO-VNBD ingestion, preprocessing, training, evaluation, and model exports |
+| engine | @FreakyAdy | edge-engine/ | Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters |
 | mobile | @FreakyAdy | mobile/ | Smartphone sensors, on-device inference, navigation UI, and offline maps |
-| shared | @FreakyAdy | shared/, tests/, docs/, maps/, .github/, .ofa/, .cursor/, README.md/, .gitignore/, AGENTS.md/, CLAUDE.md/, GEMINI.md/, scripts/ | Main-operator-owned contracts, fixtures, CI, documentation, and map tooling |
+| shared | @FreakyAdy | shared/, tests/, docs/, maps/, .github/, .ofa/, .cursor/, README.md/, .gitignore/, AGENTS.md/, CLAUDE.md/, GEMINI.md/, scripts/, rover/, web-demo/ | Main-operator-owned contracts, fixtures, CI, documentation, and map tooling |
 
 ### Rules
 

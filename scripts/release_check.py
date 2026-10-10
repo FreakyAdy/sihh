@@ -10,8 +10,8 @@ sys.path.insert(0, str(ROOT / "edge-engine"))
 sys.path.insert(0, str(ROOT / "mobile"))
 
 from idr.benchmark import certify_replay
-from idr.replay import DeadReckoningReplay
 from idr.synthetic import straight_line_trace
+from idr_engine import FusionConfig, FusionEngine
 
 
 REQUIRED_PATHS = (
@@ -49,7 +49,7 @@ def main() -> int:
         outage_start_s=3.0,
         outage_end_s=7.0,
     )
-    states = DeadReckoningReplay().replay(frames)
+    states = FusionEngine(FusionConfig(outage_confirm_s=0.2)).replay(frames)
     report = certify_replay("release-synthetic-baseline", frames, states)
     payload = {
         "release": "0.1.0-screening",

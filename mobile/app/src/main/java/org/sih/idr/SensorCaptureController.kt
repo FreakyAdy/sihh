@@ -51,6 +51,7 @@ class SensorCaptureController(
     private var latestMagneticField = FloatArray(3)
     private var latestLocation: Location? = null
     private var latestLocationReceivedNanos = 0L
+    private var lastEmittedLocationNanos = 0L
     private var running = false
 
     private val locationListener = object : LocationListener {
@@ -147,7 +148,11 @@ class SensorCaptureController(
                 magneticFieldZ = latestMagneticField[2],
                 location = latestLocation
                     ?.takeIf {
-                        event.timestamp - latestLocationReceivedNanos <= LOCATION_FRESHNESS_NS
+                        latestLocationReceivedNanos > lastEmittedLocationNanos &&
+                            SystemClock.elapsedRealtimeNanos() - latestLocationReceivedNanos <= LOCATION_FRESHNESS_NS
+                    }
+                    ?.also {
+                        lastEmittedLocationNanos = latestLocationReceivedNanos
                     }
                     ?.let(::Location),
             ),

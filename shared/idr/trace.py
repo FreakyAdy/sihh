@@ -30,7 +30,7 @@ def frame_from_dict(payload: Mapping[str, object]) -> SensorFrame:
             GnssFix(
                 **_optional_float_fields(
                     _mapping_value(gnss_payload),
-                    ("timestamp_s", "latitude_deg", "longitude_deg", "speed_mps", "horizontal_accuracy_m"),
+                    ("timestamp_s", "latitude_deg", "longitude_deg", "speed_mps", "horizontal_accuracy_m", "bearing_deg"),
                 )
             )
             if gnss_payload is not None

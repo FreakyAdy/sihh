@@ -1,6 +1,6 @@
 ---
 description: "ONEFORALL ownership boundaries — DO NOT edit manually, run ofa sync"
-globs: ["ml/**/*","edge-engine/**/*","mobile/**/*","shared/**/*","tests/**/*","docs/**/*","maps/**/*",".github/**/*",".ofa/**/*",".cursor/**/*","README.md/**/*",".gitignore/**/*","AGENTS.md/**/*","CLAUDE.md/**/*","GEMINI.md/**/*","scripts/**/*"]
+globs: ["ml/**/*","edge-engine/**/*","mobile/**/*","shared/**/*","tests/**/*","docs/**/*","maps/**/*",".github/**/*",".ofa/**/*",".cursor/**/*","README.md/**/*",".gitignore/**/*","AGENTS.md/**/*","CLAUDE.md/**/*","GEMINI.md/**/*","scripts/**/*","rover/**/*","web-demo/**/*"]
 alwaysApply: true
 ---
 
@@ -11,13 +11,13 @@ This project uses ONEFORALL (ofa) for multi-developer AI collaboration.
 
 ## Current Ownership
 
-- **ml** (UNCLAIMED): `ml/`
+- **ml** (@FreakyAdy): `ml/`
   - IO-VNBD ingestion, preprocessing, training, evaluation, and model exports
-- **engine** (UNCLAIMED): `edge-engine/`
+- **engine** (@FreakyAdy): `edge-engine/`
   - Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
 - **mobile** (@FreakyAdy): `mobile/`
   - Smartphone sensors, on-device inference, navigation UI, and offline maps
-- **shared** (@FreakyAdy): `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`
+- **shared** (@FreakyAdy): `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`, `rover/`, `web-demo/`
   - Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 
 ## Enforcement Rules

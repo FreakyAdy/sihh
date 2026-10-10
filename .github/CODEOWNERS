@@ -5,6 +5,12 @@
 #
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
+# Zone: ml — IO-VNBD ingestion, preprocessing, training, evaluation, and model exports
+/ml/    @FreakyAdy
+
+# Zone: engine — Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
+/edge-engine/    @FreakyAdy
+
 # Zone: mobile — Smartphone sensors, on-device inference, navigation UI, and offline maps
 /mobile/    @FreakyAdy
 
@@ -22,3 +28,5 @@
 /CLAUDE.md/    @FreakyAdy
 /GEMINI.md/    @FreakyAdy
 /scripts/    @FreakyAdy
+/rover/    @FreakyAdy
+/web-demo/    @FreakyAdy

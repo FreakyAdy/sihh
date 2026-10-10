@@ -4,15 +4,41 @@
     "sample_count": 601,
     "duration_s": 60.0,
     "update_rate_hz": 10.0,
-    "max_position_error_m": 9.322320693172514e-12,
+    "max_position_error_m": 16.200336974086042,
     "travelled_distance_m": 1000.0000000000001,
-    "drift_percent": 9.322320693172514e-13,
-    "outage_transition_latency_s": 0.0,
-    "recovery_timestamp_s": 50.1,
+    "drift_percent": 1.620033697408604,
+    "outage_transition_latency_s": 0.3000000000000007,
+    "recovery_timestamp_s": 50.2,
     "meets_drift_target": true,
     "meets_mobile_rate_target": true
   },
+  "outage_metrics": {
+    "outage_start_s": 10.0,
+    "outage_end_s": 50.0,
+    "covered_distance_m": 666.6666666666667,
+    "truth_coverage_fraction": 1.0,
+    "max_error_m": 16.120136993101262,
+    "median_error_m": 4.060168886945776,
+    "p90_error_m": 13.068143410532262,
+    "drift_percent": 2.418020548965189,
+    "meets_drift_target": true
+  },
   "drift_target_percent": 10.0,
   "mobile_update_target_hz": 10.0,
-  "passed": true
+  "passed": true,
+  "simulation_parameters": {
+    "speed_kmph": 60.0,
+    "outage_duration_s": 40.0,
+    "outage_distance_m": 666.67,
+    "simulated_accel_bias_mps2": 0.02,
+    "simulated_gyro_bias_rps": 0.0015,
+    "naive_inertial_drift_percent": 3.91,
+    "naive_max_error_m": 26.05,
+    "idr_constrained_drift_percent": 2.42,
+    "idr_max_error_m": 16.12,
+    "meets_sih_10pct_drift_target": true,
+    "method": "FusionEngine with Kinematic NHC and SegmentMapMatcher",
+    "evidence_type": "synthetic_benchmark_simulation",
+    "disclaimer": "Synthetic simulation for pipeline validation. Does not represent real-world tunnel validation without physical sensor traces."
+  }
 }

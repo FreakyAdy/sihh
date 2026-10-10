@@ -148,7 +148,7 @@ Run release certification:
 & 'C:/Program Files/Python314/python.exe' scripts/release_check.py
 ```
 
-Expected current result: 39 tests pass and the synthetic release benchmark
+Expected current result: 72 tests pass and the synthetic release benchmark
 passes the drift and 10 Hz update-rate thresholds.
 
 ## Model workflow

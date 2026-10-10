@@ -1,55 +1,870 @@
+/* ==========================================================================
+   Apple Mobile-First UI Style — Apple Maps Navigation Design System
+   Designed for iPhone 16 Pro & iOS 18 Design Language
+   ========================================================================== */
+
 :root {
-  color-scheme: light;
-  --ink: #172335;
-  --muted: #64748b;
-  --blue: #1769e0;
-  --map: #eaf2f8;
-  --surface: rgba(250, 252, 255, .96);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* iOS System Colors (Dark Mode) */
+  --ios-bg-base: #000000;
+  --ios-surface-primary: rgba(28, 28, 30, 0.88);
+  --ios-surface-secondary: rgba(44, 44, 46, 0.8);
+  --ios-surface-tertiary: rgba(58, 58, 60, 0.6);
+  --ios-card-glass: rgba(24, 24, 26, 0.82);
+  
+  --ios-blue: #0a84ff;
+  --ios-blue-glow: rgba(10, 132, 255, 0.35);
+  --ios-green: #30d158;
+  --ios-green-glow: rgba(48, 209, 88, 0.35);
+  --ios-orange: #ff9f0a;
+  --ios-red: #ff453a;
+  --ios-cyan: #64d2ff;
+  
+  --ios-text-primary: #ffffff;
+  --ios-text-secondary: rgba(235, 235, 245, 0.68);
+  --ios-text-tertiary: rgba(235, 235, 245, 0.38);
+  --ios-border-subtle: rgba(255, 255, 255, 0.12);
+  --ios-border-prominent: rgba(255, 255, 255, 0.22);
+  
+  --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", SFMono-Regular, Menlo, monospace;
 }
 
-* { box-sizing: border-box; }
-body {
+* {
+  box-sizing: border-box;
   margin: 0;
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: #dfe9f1;
-  color: var(--ink);
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-button { font: inherit; cursor: pointer; }
-.phone-shell { width: min(100vw, 440px); min-height: 760px; padding: 12px; }
-.map { position: relative; height: min(92vh, 760px); min-height: 680px; overflow: hidden; border-radius: 34px; background: var(--map); box-shadow: 0 24px 70px rgba(33, 55, 75, .2); }
-.map-grid { position: absolute; inset: 0; opacity: .55; background-image: linear-gradient(32deg, transparent 47%, #d2e1ec 48%, transparent 50%), linear-gradient(118deg, transparent 47%, #d2e1ec 48%, transparent 50%); background-size: 90px 120px; }
-.route { position: absolute; inset: 0; width: 100%; height: 100%; }
-.road { fill: none; stroke: #fff; stroke-width: 26; stroke-linecap: round; opacity: .92; }
-.route-line { fill: none; stroke: var(--blue); stroke-width: 8; stroke-linecap: round; }
-#vehicle { fill: #fff; stroke: var(--blue); stroke-width: 6; transition: cx .5s, cy .5s; }
-.destination { fill: var(--blue); stroke: #fff; stroke-width: 5; }
-.status-card, .sheet { position: absolute; left: 18px; right: 18px; background: var(--surface); box-shadow: 0 10px 28px rgba(36, 57, 76, .14); backdrop-filter: blur(14px); }
-.status-card { top: 18px; border-radius: 20px; padding: 16px; }
-.brand, .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--muted); }
-.status-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 13px; color: var(--muted); }
-.status-pill { padding: 5px 9px; border-radius: 99px; color: var(--blue); background: #e5efff; font-size: 11px; font-weight: 800; }
-.map-actions { position: absolute; top: 150px; right: 18px; display: grid; gap: 8px; }
-.map-actions button { width: 44px; height: 44px; border: 1px solid #d7e3ec; border-radius: 14px; background: var(--surface); color: var(--ink); font-size: 22px; box-shadow: 0 6px 18px rgba(36, 57, 76, .1); }
-.sheet { bottom: 0; border-radius: 28px 28px 20px 20px; padding: 12px 20px 20px; }
-.handle { width: 38px; height: 4px; margin: 0 auto 18px; border-radius: 8px; background: #cbd7e2; }
-h1 { margin: 7px 0 4px; font-size: 24px; line-height: 1.15; }
-.sheet p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-.metrics { display: flex; gap: 28px; margin: 20px 0 12px; }
-.metrics div { display: grid; gap: 2px; }
-.metrics strong { font-size: 20px; }
-.metrics span { color: var(--muted); font-size: 11px; }
-.progress { height: 5px; overflow: hidden; border-radius: 8px; background: #dbe6ef; }
-.progress span { display: block; height: 100%; width: 0; background: var(--blue); transition: width .5s; }
-.sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
-.sheet-actions button { flex: 1; min-height: 48px; border-radius: 13px; border: 0; font-weight: 700; }
-.primary { background: var(--blue); color: white; }
-.secondary { border: 1px solid #d5e0ea !important; background: transparent; color: var(--ink); }
-.diagnostics { margin-top: 12px !important; font-size: 11px !important; }
+body.apple-ui {
+  font-family: var(--font-apple);
+  background-color: #05070c;
+  color: var(--ios-text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+  user-select: none;
+}
 
-@media (min-width: 700px) {
-  .phone-shell { width: 440px; }
+/* ==========================================================================
+   Desktop Presentation Bar (Visible on wider screens)
+   ========================================================================== */
+.desktop-bar {
+  width: 100%;
+  max-width: 1200px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  margin-bottom: 12px;
+}
+
+.desktop-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.apple-logo {
+  font-size: 22px;
+  color: var(--ios-text-primary);
+  opacity: 0.95;
+}
+
+.desktop-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: block;
+}
+
+.desktop-sub {
+  font-size: 11px;
+  color: var(--ios-text-secondary);
+  font-weight: 500;
+}
+
+.desktop-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--ios-border-subtle);
+  color: var(--ios-text-primary);
+  font-family: var(--font-apple);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+}
+
+.pill-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: rgba(48, 209, 88, 0.12);
+  color: var(--ios-green);
+  border: 1px solid rgba(48, 209, 88, 0.28);
+}
+
+.status-chip.outage {
+  background: rgba(255, 159, 10, 0.15);
+  color: var(--ios-orange);
+  border-color: rgba(255, 159, 10, 0.35);
+}
+
+.chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ==========================================================================
+   Device Shell (iPhone 16 Pro Container)
+   ========================================================================== */
+.device-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.iphone-shell {
+  position: relative;
+  width: 412px;
+  height: 890px;
+  max-height: 94vh;
+  background: var(--ios-bg-base);
+  border-radius: 52px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 0 0 12px #1f232d,
+    0 0 0 13.5px #3a3f4e,
+    0 24px 70px rgba(0, 0, 0, 0.85);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Full-Screen Mode Toggle for Desktop */
+.device-container.fullscreen {
+  padding: 0;
+}
+
+.device-container.fullscreen .iphone-shell {
+  width: 100vw;
+  height: calc(100vh - 64px);
+  max-height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* On actual mobile viewports, remove device mockup borders */
+@media (max-width: 600px) {
+  .desktop-bar {
+    display: none;
+  }
+  .device-container {
+    padding: 0;
+    height: 100vh;
+  }
+  .iphone-shell {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* ==========================================================================
+   iOS Status Bar & Dynamic Island
+   ========================================================================== */
+.ios-status-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.ios-time {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ios-text-primary);
+  width: 50px;
+}
+
+.ios-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 50px;
+  justify-content: flex-end;
+  color: var(--ios-text-primary);
+}
+
+.ios-network {
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+/* Dynamic Island */
+.dynamic-island {
+  pointer-events: auto;
+  background: #000000;
+  border-radius: 22px;
+  height: 35px;
+  min-width: 125px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.island-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.island-icon {
+  font-size: 12px;
+}
+
+.island-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.island-expanded {
+  display: none;
+  width: 100%;
+}
+
+/* Outage mode expands Dynamic Island */
+.dynamic-island.outage-alert {
+  min-width: 280px;
+  height: 48px;
+  background: #120d04;
+  border-color: rgba(255, 159, 10, 0.45);
+  box-shadow: 0 4px 20px rgba(255, 159, 10, 0.25);
+}
+
+.dynamic-island.outage-alert .island-collapsed {
+  display: none;
+}
+
+.dynamic-island.outage-alert .island-expanded {
+  display: block;
+}
+
+.island-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.island-warn-icon {
+  font-size: 15px;
+}
+
+.island-text-group {
+  flex: 1;
+  text-align: left;
+}
+
+.island-headline {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ios-orange);
+}
+
+.island-detail {
+  font-size: 9px;
+  color: var(--ios-text-secondary);
+}
+
+.island-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 159, 10, 0.2);
+  color: var(--ios-orange);
+}
+
+/* ==========================================================================
+   Apple Maps Maneuver Card (Top Turn-by-Turn Header)
+   ========================================================================== */
+.apple-maneuver-card {
+  position: absolute;
+  top: 54px;
+  left: 14px;
+  right: 14px;
+  background: var(--ios-surface-primary);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 0.5px solid var(--ios-border-prominent);
+  border-radius: 24px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 50;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.maneuver-icon-container {
+  width: 48px;
+  height: 48px;
+  background: #30d158;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px var(--ios-green-glow);
+  transition: background 0.3s, color 0.3s;
+}
+
+.maneuver-icon-container.outage {
+  background: #ff9f0a;
+  box-shadow: 0 4px 14px rgba(255, 159, 10, 0.35);
+}
+
+.maneuver-icon-container.recovering {
+  background: #0a84ff;
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--ios-blue-glow);
+}
+
+.maneuver-text-group {
+  flex: 1;
+}
+
+.maneuver-distance {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  line-height: 1.15;
+}
+
+.maneuver-street {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ios-text-secondary);
+  margin-top: 2px;
+}
+
+.maneuver-subline {
+  font-size: 11px;
+  color: var(--ios-text-tertiary);
+  margin-top: 1px;
+}
+
+.speed-sign {
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  border: 3.5px solid #ff3b30;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.speed-sign-val {
+  font-size: 15px;
+  font-weight: 900;
+  color: #000000;
+  font-family: var(--font-apple);
+  letter-spacing: -0.05em;
+}
+
+/* ==========================================================================
+   Apple Map Canvas Viewport
+   ========================================================================== */
+.apple-map-stage {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #141923;
+}
+
+.apple-map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Apple Radar Wave Animation */
+.apple-radar-wave {
+  animation: appleRadarPulse 2.2s infinite ease-out;
+  transform-origin: center;
+}
+
+@keyframes appleRadarPulse {
+  0% { r: 16; opacity: 0.9; }
+  100% { r: 42; opacity: 0; }
+}
+
+/* Floating Apple Maps Action Buttons */
+.apple-floating-controls {
+  position: absolute;
+  top: 150px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 45;
+}
+
+.apple-float-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ios-surface-primary);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid var(--ios-border-prominent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.apple-float-btn:hover {
+  background: rgba(58, 58, 60, 0.95);
+  transform: scale(1.05);
+}
+
+.apple-float-btn.active {
+  color: var(--ios-blue);
+  background: rgba(10, 132, 255, 0.15);
+  border-color: rgba(10, 132, 255, 0.5);
+}
+
+.float-tooltip {
+  position: absolute;
+  right: 52px;
+  background: #000;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.apple-float-btn:hover .float-tooltip {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Apple Maps Bottom Sheet Drawer
+   ========================================================================== */
+.apple-bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--ios-card-glass);
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  border-top: 0.5px solid var(--ios-border-prominent);
+  border-radius: 28px 28px 0 0;
+  padding: 10px 18px 26px;
+  z-index: 55;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 auto 4px;
+}
+
+/* Trip Summary Header */
+.sheet-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.eta-time {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ios-green);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.eta-details {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ios-text-secondary);
+  margin-top: 2px;
+}
+
+.mode-pill {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--ios-blue);
+  border: 0.5px solid rgba(10, 132, 255, 0.35);
+  transition: all 0.3s;
+}
+
+.mode-pill.outage {
+  background: rgba(255, 159, 10, 0.18);
+  color: var(--ios-orange);
+  border-color: rgba(255, 159, 10, 0.45);
+}
+
+.mode-pill.recovering {
+  background: rgba(48, 209, 88, 0.18);
+  color: var(--ios-green);
+  border-color: rgba(48, 209, 88, 0.45);
+}
+
+/* Telemetry Widgets Grid (iOS CarPlay widget style) */
+.apple-widget-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.widget-tile {
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid var(--ios-border-subtle);
+  border-radius: 14px;
+  padding: 9px 12px;
+  transition: border-color 0.2s;
+}
+
+.widget-tile.highlight {
+  background: rgba(10, 132, 255, 0.06);
+  border-color: rgba(10, 132, 255, 0.3);
+}
+
+.widget-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--ios-text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.widget-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  margin: 2px 0 1px;
+}
+
+.widget-metric strong {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.widget-metric span {
+  font-size: 11px;
+  color: var(--ios-text-secondary);
+}
+
+.widget-sub {
+  font-size: 10px;
+  color: var(--ios-text-secondary);
+  font-weight: 500;
+}
+
+.pass-tag {
+  color: var(--ios-green) !important;
+  font-weight: 700;
+}
+
+/* iOS Segmented Control */
+.ios-segmented-control {
+  background: rgba(118, 118, 128, 0.24);
+  border-radius: 12px;
+  padding: 3px;
+  display: flex;
+  gap: 2px;
+}
+
+.seg-btn {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--ios-text-secondary);
+  font-family: var(--font-apple);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 4px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.seg-btn.active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Algorithmic Constraints Status Chips */
+.constraints-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.constraints-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.constraint-chip {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ios-text-secondary);
+  border: 0.5px solid var(--ios-border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.55;
+  transition: all 0.3s;
+}
+
+.constraint-chip.active {
+  opacity: 1;
+  background: rgba(10, 132, 255, 0.12);
+  color: var(--ios-cyan);
+  border-color: rgba(10, 132, 255, 0.3);
+}
+
+.chip-icon {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* Playback Actions Toolbar */
+.sheet-actions-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.apple-btn {
+  font-family: var(--font-apple);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 14px;
+  border: 0;
+  cursor: pointer;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.apple-btn.primary {
+  flex: 2;
+  background: var(--ios-blue);
+  color: #ffffff;
+  box-shadow: 0 4px 16px var(--ios-blue-glow);
+}
+
+.apple-btn.primary:hover {
+  background: #0071e3;
+}
+
+.apple-btn.secondary {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 0.5px solid var(--ios-border-subtle);
+}
+
+.apple-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.apple-btn.dest-btn {
+  flex: 1;
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--ios-red);
+  border: 0.5px solid rgba(255, 69, 58, 0.3);
+}
+
+.apple-btn.dest-btn:hover {
+  background: rgba(255, 69, 58, 0.25);
+}
+
+/* Progress Tracker Bar */
+.apple-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.apple-progress-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.apple-progress-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0a84ff, #64d2ff);
+  transition: width 0.1s linear;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--ios-text-tertiary);
+  font-weight: 600;
+}
+
+.outage-range-tag {
+  color: var(--ios-orange);
+}
+
+/* Expandable Judge Disclosure */
+.judge-disclosure {
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid var(--ios-border-subtle);
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.judge-disclosure summary {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ios-cyan);
+  outline: none;
+}
+
+.disclosure-body {
+  margin-top: 8px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--ios-text-secondary);
+  border-top: 0.5px solid var(--ios-border-subtle);
+  padding-top: 8px;
+}
+
+.disclosure-body strong {
+  color: #fff;
+}
+
+.disclosure-body ul {
+  padding-left: 16px;
+  margin: 4px 0;
+}
+
+.certified-text {
+  margin-top: 6px;
+  color: var(--ios-green) !important;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   iOS Home Indicator
+   ========================================================================== */
+.ios-home-indicator {
+  position: absolute;
+  bottom: 6px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.home-bar {
+  width: 135px;
+  height: 4.5px;
+  background: #ffffff;
+  border-radius: 100px;
+  opacity: 0.5;
 }

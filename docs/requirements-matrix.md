@@ -32,6 +32,11 @@ Statuses are evidence-based:
 | `shared/idr/metrics.py` adds `OutageMetrics` / `measure_outage()` | Any caller can compute the correct windowed metric |
 | `GnssFix.bearing_deg` field added | GNSS receivers that supply course-over-ground now initialize heading instantly |
 | `FusionEngine` heading initialization from GNSS bearing and separated fixes | Fixes northbound/non-east DR divergence at outage start |
+| `VehicleFrameAdapter` mount decoupling & gravity compensation | Fixes catastrophic bug where chassis acceleration rotated with Earth compass bearing |
+| `SensorCaptureController` & `NativeNavigationEngine` GNSS deduplication | Eliminates 150 Hz fix replication and ensures recovery count retention |
+| `FusionEngine` Zero Velocity Updates (ZUPT) & speed model blending | Clamps stationary drift during red lights/tunnel traffic jams |
+| `generate_screening_evidence.py` upgraded to `FusionEngine` | Eliminates misleading 0% drift artifact; reports realistic 2.4% drift with naive comparison |
+| `web-demo` complete UI/UX overhaul for judges | Delivers high-impact interactive simulation with tunnel blackout, ghost baseline comparison, and HUD |
 | `io_vnbd.py` validates all configured columns and rejects non-monotonic timestamps | Prevents silent data corruption during ingestion |
 | `dataset.py` adds `session_train_test_split` convenience function | Training script can split without writing boilerplate |
 | `scripts/train_io_vnbd.py` — end-to-end pipeline | Enables one command to train, evaluate and generate SVG plots once data is provided |

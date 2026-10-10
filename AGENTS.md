@@ -14,11 +14,11 @@ Each directory/area of the codebase is assigned to a **zone**. Each zone can be
 **claimed** by one developer at a time. You must only modify files within zones
 that your developer has claimed.
 
-### ml — 🟢 Available
+### ml — 🔴 Claimed by **@FreakyAdy**
 - Paths: `ml/`
 - IO-VNBD ingestion, preprocessing, training, evaluation, and model exports
 
-### engine — 🟢 Available
+### engine — 🔴 Claimed by **@FreakyAdy**
 - Paths: `edge-engine/`
 - Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
 
@@ -27,7 +27,7 @@ that your developer has claimed.
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
 ### shared — 🔴 Claimed by **@FreakyAdy**
-- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`
+- Paths: `shared/`, `tests/`, `docs/`, `maps/`, `.github/`, `.ofa/`, `.cursor/`, `README.md/`, `.gitignore/`, `AGENTS.md/`, `CLAUDE.md/`, `GEMINI.md/`, `scripts/`, `rover/`, `web-demo/`
 - Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
 
 ## Strict Rules

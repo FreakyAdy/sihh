@@ -84,6 +84,7 @@ class NativeNavigationEngine(
 ) {
     private var origin: Location? = null
     private var lastTimestampSeconds: Double? = null
+    private var lastGnssTimestampSeconds: Double? = null
     private var outageStartSeconds: Double? = null
     private var recoveryCount = 0
     private var xMeters = 0.0
@@ -95,6 +96,7 @@ class NativeNavigationEngine(
     fun reset() {
         origin = null
         lastTimestampSeconds = null
+        lastGnssTimestampSeconds = null
         outageStartSeconds = null
         recoveryCount = 0
         xMeters = 0.0
@@ -126,7 +128,14 @@ class NativeNavigationEngine(
         speedMps = max(
             0.0,
             speedMps + sample.forwardAccelerationMps2 * dt,
-        ).coerceAtMost(max(modelSpeed, speedMps + MAX_SPEED_STEP_MPS))
+        )
+        if (modelSpeed > 0.0) {
+            speedMps = max(0.0, speedMps * 0.8 + modelSpeed * 0.2)
+        }
+        // Zero Velocity Update (ZUPT): clamp stationary drift when stopped
+        if (speedMps < 0.3 && kotlin.math.abs(sample.forwardAccelerationMps2) < 0.15 && kotlin.math.abs(sample.yawRateRps) < 0.05) {
+            speedMps = 0.0
+        }
         val distance = speedMps * dt
         xMeters += cos(headingRad) * distance
         yMeters += sin(headingRad) * distance
@@ -135,12 +144,13 @@ class NativeNavigationEngine(
         if (location != null) {
             applyGnss(location, sample.timestampSeconds)
         } else {
-            enterDeadReckoning(sample.timestampSeconds)
+            handleMissingGnss(sample.timestampSeconds)
         }
         return estimate(sample.timestampSeconds)
     }
 
     private fun applyGnss(location: Location, timestampSeconds: Double) {
+        lastGnssTimestampSeconds = timestampSeconds
         if (origin == null) {
             origin = Location(location)
             xMeters = 0.0
@@ -148,11 +158,17 @@ class NativeNavigationEngine(
             if (location.hasBearing()) headingRad = Math.toRadians(location.bearing.toDouble())
             mode = NativeNavigationMode.GNSS_AIDED
             recoveryCount = recoveryConfirmCount
+            outageStartSeconds = null
         } else {
-            recoveryCount += 1
-            if (mode != NativeNavigationMode.DEAD_RECKONING ||
-                recoveryCount >= recoveryConfirmCount
-            ) {
+            if (mode == NativeNavigationMode.DEAD_RECKONING) {
+                recoveryCount += 1
+                if (recoveryCount >= recoveryConfirmCount) {
+                    projectLocation(location)
+                    mode = NativeNavigationMode.GNSS_AIDED
+                    outageStartSeconds = null
+                    recoveryCount = 0
+                }
+            } else {
                 projectLocation(location)
                 mode = NativeNavigationMode.GNSS_AIDED
                 outageStartSeconds = null
@@ -161,11 +177,13 @@ class NativeNavigationEngine(
         if (location.hasSpeed()) speedMps = max(0.0, location.speed.toDouble())
     }
 
-    private fun enterDeadReckoning(timestampSeconds: Double) {
-        if (origin == null) return
-        recoveryCount = 0
-        if (outageStartSeconds == null) outageStartSeconds = timestampSeconds
-        if (timestampSeconds - outageStartSeconds!! >= outageConfirmSeconds) {
+    private fun handleMissingGnss(timestampSeconds: Double) {
+        val lastFixTime = lastGnssTimestampSeconds ?: return
+        val elapsed = timestampSeconds - lastFixTime
+        if (elapsed >= outageConfirmSeconds) {
+            if (outageStartSeconds == null) {
+                outageStartSeconds = lastFixTime
+            }
             mode = NativeNavigationMode.DEAD_RECKONING
         }
     }
