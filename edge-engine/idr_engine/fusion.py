@@ -70,11 +70,11 @@ class LinearFusionCorrection:
 
 @dataclass(frozen=True)
 class FusionConfig:
-    outage_confirm_s: float = 0.2
+    outage_confirm_s: float = 1.5
     recovery_confirm_count: int = 2
     max_dt_s: float = 1.0
     confidence_decay_s: float = 60.0
-    nhc_lateral_velocity_gain: float = 0.15
+    nhc_lateral_velocity_gain: float = 0.15  # Non-holonomic lateral velocity constraint damping gain
     map_correction_gain: float = 0.2
 
     def __post_init__(self) -> None:
@@ -114,10 +114,12 @@ class FusionEngine:
         self._speed_mps = initial_fix.speed_mps if initial_fix and initial_fix.speed_mps else 0.0
         self._heading_rad = 0.0
         self._heading_initialized = False
+        self._gyro_bias_rps = 0.0
         # Stores (x_m, y_m) from successive GNSS fixes for bearing inference
         # when the receiver does not supply a course-over-ground field.
         self._gnss_history: list[tuple[float, float]] = []
         self._last_timestamp_s: Optional[float] = None
+        self._last_gnss_timestamp_s: Optional[float] = None
         self._outage_started_s: Optional[float] = None
         self._mode = NavigationMode.INITIALIZING
         self._recovery_count = 0
@@ -147,9 +149,12 @@ class FusionEngine:
         dt_s: float,
         correction: FusionCorrection,
     ) -> None:
-        self._heading_rad += (
-            frame.imu.yaw_rate_rps - correction.yaw_rate_bias_rps
-        ) * dt_s
+        effective_yaw_rate = (
+            frame.imu.yaw_rate_rps
+            - correction.yaw_rate_bias_rps
+            - self._gyro_bias_rps
+        )
+        self._heading_rad += effective_yaw_rate * dt_s
         self._speed_mps = max(
             0.0,
             self._speed_mps
@@ -172,7 +177,12 @@ class FusionEngine:
     def _handle_missing_gnss(self, timestamp_s: float) -> NavigationState:
         if self._origin is None:
             raise ValueError("a GNSS fix is required before inertial propagation")
-        self._recovery_count = 0
+        # Only reset recovery counter if GNSS has been missing longer than expected recovery interval
+        if self._last_gnss_timestamp_s is not None and (
+            timestamp_s - self._last_gnss_timestamp_s >= max(self.config.outage_confirm_s * 2.0, 2.5)
+        ):
+            self._recovery_count = 0
+
         if self._outage_started_s is None:
             self._outage_started_s = timestamp_s
         outage_duration = timestamp_s - self._outage_started_s
@@ -190,6 +200,7 @@ class FusionEngine:
         initializing = self._origin is None
         if self._origin is None:
             self._origin = fix
+        self._last_gnss_timestamp_s = timestamp_s
         projected_x, projected_y = _project_fix(fix, self._origin)
         self._recovery_count += 1
         if self._mode in (NavigationMode.INITIALIZING, NavigationMode.GNSS_AIDED):
@@ -200,30 +211,52 @@ class FusionEngine:
                 1.0 if initializing else correction.gnss_gain,
             )
             self._mode = NavigationMode.GNSS_AIDED
+            self._outage_started_s = None
+            self._recovery_count = 0
         elif self._recovery_count >= self.config.recovery_confirm_count:
-            self._apply_gnss(fix, projected_x, projected_y, correction.gnss_gain)
+            recovery_gain = min(1.0, max(0.2, correction.gnss_gain))
+            self._apply_gnss(fix, projected_x, projected_y, recovery_gain)
             self._mode = NavigationMode.GNSS_AIDED
             self._outage_started_s = None
+            self._recovery_count = 0
 
-        # --- Heading initialization from GNSS ---
-        # Priority 1: receiver-supplied course-over-ground (available instantly).
-        # Priority 2: inferred from two fixes at least 5 m apart (more robust).
-        if not self._heading_initialized:
-            if fix.bearing_deg is not None:
-                # Convert from clockwise-from-north (compass) to east/north math angle
-                # east/north: angle 0 = east (+x), 90° = north (+y)
-                # compass:    bearing 0 = north, 90° = east
-                self._heading_rad = math.radians(90.0 - fix.bearing_deg)
+        # --- Continuous heading tracking and gyro bias estimation from GNSS ---
+        # Priority 1: receiver-supplied course-over-ground
+        # Priority 2: inferred from two fixes at least 5 m apart
+        if fix.bearing_deg is not None:
+            target_heading = math.radians(90.0 - fix.bearing_deg)
+            if not self._heading_initialized:
+                self._heading_rad = target_heading
                 self._heading_initialized = True
-            else:
-                self._gnss_history.append((projected_x, projected_y))
-                if len(self._gnss_history) >= 2:
-                    dx = self._gnss_history[-1][0] - self._gnss_history[-2][0]
-                    dy = self._gnss_history[-1][1] - self._gnss_history[-2][1]
-                    separation = math.hypot(dx, dy)
-                    if separation >= 5.0:  # minimum distance for a reliable bearing
-                        self._heading_rad = math.atan2(dy, dx)
+            elif fix.speed_mps is not None and fix.speed_mps >= 2.5:
+                heading_err = math.atan2(
+                    math.sin(target_heading - self._heading_rad),
+                    math.cos(target_heading - self._heading_rad),
+                )
+                self._heading_rad += heading_err * 0.15
+                if abs(heading_err) < 0.2:
+                    self._gyro_bias_rps = max(-0.05, min(0.05, self._gyro_bias_rps - heading_err * 0.01))
+        else:
+            self._gnss_history.append((projected_x, projected_y))
+            if len(self._gnss_history) >= 2:
+                dx = self._gnss_history[-1][0] - self._gnss_history[-2][0]
+                dy = self._gnss_history[-1][1] - self._gnss_history[-2][1]
+                separation = math.hypot(dx, dy)
+                if separation >= 5.0:
+                    inferred_heading = math.atan2(dy, dx)
+                    if not self._heading_initialized:
+                        self._heading_rad = inferred_heading
                         self._heading_initialized = True
+                    elif fix.speed_mps is not None and fix.speed_mps >= 2.5:
+                        heading_err = math.atan2(
+                            math.sin(inferred_heading - self._heading_rad),
+                            math.cos(inferred_heading - self._heading_rad),
+                        )
+                        self._heading_rad += heading_err * 0.10
+                        if abs(heading_err) < 0.2:
+                            self._gyro_bias_rps = max(-0.05, min(0.05, self._gyro_bias_rps - heading_err * 0.01))
+            if len(self._gnss_history) > 10:
+                self._gnss_history = self._gnss_history[-5:]
 
         confidence = self._gnss_confidence(fix)
         outage_duration = 0.0 if self._outage_started_s is None else timestamp_s - self._outage_started_s

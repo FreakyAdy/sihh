@@ -15,7 +15,7 @@ from idr.scenarios import (
     run_scenario,
 )
 from idr.synthetic import straight_line_trace
-from idr_engine import FusionEngine
+from idr_engine import FusionConfig, FusionEngine
 from idr_mobile import MobileRuntime, RuntimeHealth, RuntimeSample
 
 
@@ -28,7 +28,7 @@ class IntegrationScenarioTests(unittest.TestCase):
             outage_start_s=0.8,
             outage_end_s=1.4,
         )
-        runtime = MobileRuntime(FusionEngine())
+        runtime = MobileRuntime(FusionEngine(FusionConfig(outage_confirm_s=0.2)))
         runtime.start()
         for frame in frames:
             runtime.submit(

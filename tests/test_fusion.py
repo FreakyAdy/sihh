@@ -16,6 +16,7 @@ from idr_engine import (
     RoadSegment,
     SegmentMapMatcher,
     HmmMapMatcher,
+    StreamingHmmMatcher,
     frame_from_external,
 )
 
@@ -86,11 +87,12 @@ class FusionTests(unittest.TestCase):
             GnssFix(0.0, 0.0, 0.0, speed_mps=2.0),
         )
         corrected = FusionEngine(
+            FusionConfig(outage_confirm_s=0.2),
             correction_model=LinearFusionCorrection(
                 acceleration_scale_bias=0.0,
                 yaw_bias_weight=0.5,
                 gnss_gain=0.5,
-            )
+            ),
         )
         corrected.update(frame)
         corrected.update(SensorFrame(ImuSample(0.5, 2.0, 0.0), None))
@@ -158,6 +160,65 @@ class FusionTests(unittest.TestCase):
         state = engine.update(SensorFrame(ImuSample(0.5, 0.0, 0.0)))
         self.assertGreater(state.speed_mps, 0.0)
         self.assertLessEqual(state.speed_mps, 10.0)
+
+    def test_1hz_gnss_with_10hz_imu_no_flapping(self) -> None:
+        """Verify 1 Hz GNSS with 10 Hz IMU stays in GNSS_AIDED and recovers cleanly."""
+        frames = []
+        for i in range(101):
+            t = round(i * 0.1, 2)
+            x = 10.0 * t
+            gnss = None
+            if i % 10 == 0:
+                gnss = GnssFix(t, 0.0, x / METERS_PER_DEGREE, speed_mps=10.0, bearing_deg=90.0)
+            frames.append(SensorFrame(ImuSample(t, 0.0, 0.0), gnss, truth_x_m=x, truth_y_m=0.0))
+
+        engine = FusionEngine()
+        states = engine.replay(frames)
+        modes = [s.mode for s in states]
+        # After initial fix, no flapping to DEAD_RECKONING should occur
+        self.assertTrue(all(m == NavigationMode.GNSS_AIDED for m in modes[1:]))
+
+    def test_streaming_hmm_matcher(self) -> None:
+        """Verify StreamingHmmMatcher buffers observations and snaps to road segments."""
+        segments = [
+            RoadSegment(0.0, 0.0, 50.0, 0.0),
+            RoadSegment(50.0, 0.0, 100.0, 0.0),
+        ]
+        connectivity = {0: (0, 1), 1: (1,)}
+        hmm = HmmMapMatcher(segments, connectivity)
+        matcher = StreamingHmmMatcher(hmm, window=10, min_window=3)
+
+        # Before min_window samples, returns None
+        self.assertIsNone(matcher.match(10.0, 2.0, 0.0))
+        self.assertIsNone(matcher.match(20.0, 2.0, 0.0))
+
+        # At sample 3+, snaps to the road segment (y=0.0)
+        constraint = matcher.match(30.0, 2.0, 0.0)
+        self.assertIsNotNone(constraint)
+        self.assertAlmostEqual(constraint.y_m, 0.0, places=3)  # type: ignore[union-attr]
+        self.assertAlmostEqual(constraint.x_m, 30.0, places=3)  # type: ignore[union-attr]
+
+    def test_continuous_heading_correction(self) -> None:
+        """Verify heading smoothly tracks GNSS course-over-ground updates."""
+        engine = FusionEngine()
+        # Initialize heading east (90 deg compass = 0.0 rad math angle)
+        engine.update(
+            SensorFrame(
+                ImuSample(0.0, 0.0, 0.0),
+                GnssFix(0.0, 0.0, 0.0, speed_mps=10.0, bearing_deg=90.0),
+            )
+        )
+        self.assertAlmostEqual(engine._heading_rad, 0.0, places=5)
+
+        # Receive GNSS bearing pointing north (0 deg compass = pi/2 rad math angle)
+        engine.update(
+            SensorFrame(
+                ImuSample(1.0, 0.0, 0.0),
+                GnssFix(1.0, 0.0, 0.0001, speed_mps=10.0, bearing_deg=0.0),
+            )
+        )
+        # Heading should have smoothly rotated toward north (> 0.0)
+        self.assertGreater(engine._heading_rad, 0.1)
 
 
 if __name__ == "__main__":
