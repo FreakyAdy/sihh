@@ -97,13 +97,13 @@ class VehicleCalibration(
         val bearingRad = Math.toRadians(motionSamples.mapNotNull { it.location?.bearing?.toDouble() }.average())
         val meanX = motionSamples.map { it.accelerationX - stationary.accelerationX }.average()
         val meanY = motionSamples.map { it.accelerationY - stationary.accelerationY }.average()
-        val forwardAcceleration = hypot(meanX, meanY)
-        val axis = if (abs(meanX) >= abs(meanY)) {
-            if (meanX >= 0.0) DeviceForwardAxis.POSITIVE_X else DeviceForwardAxis.NEGATIVE_X
-        } else if (meanY >= 0.0) {
-            DeviceForwardAxis.POSITIVE_Y
-        } else {
-            DeviceForwardAxis.NEGATIVE_Y
+        val meanZ = motionSamples.map { it.accelerationZ - stationary.accelerationZ }.average()
+        val forwardAcceleration = hypot(meanX, hypot(meanY, meanZ))
+        val maxAxisVal = maxOf(abs(meanX), abs(meanY), abs(meanZ))
+        val axis = when (maxAxisVal) {
+            abs(meanX) -> if (meanX >= 0.0) DeviceForwardAxis.POSITIVE_X else DeviceForwardAxis.NEGATIVE_X
+            abs(meanY) -> if (meanY >= 0.0) DeviceForwardAxis.POSITIVE_Y else DeviceForwardAxis.NEGATIVE_Y
+            else -> if (meanZ >= 0.0) DeviceForwardAxis.POSITIVE_Z else DeviceForwardAxis.NEGATIVE_Z
         }
         if (!forwardAcceleration.isFinite() || !bearingRad.isFinite()) {
             stage = CalibrationStage.FAILED

@@ -14,6 +14,8 @@ enum class DeviceForwardAxis {
     NEGATIVE_X,
     POSITIVE_Y,
     NEGATIVE_Y,
+    POSITIVE_Z,
+    NEGATIVE_Z,
 }
 
 class VehicleFrameAdapter {
@@ -63,6 +65,8 @@ class VehicleFrameAdapter {
             DeviceForwardAxis.NEGATIVE_X -> -sample.accelerationX.toDouble()
             DeviceForwardAxis.POSITIVE_Y -> sample.accelerationY.toDouble()
             DeviceForwardAxis.NEGATIVE_Y -> -sample.accelerationY.toDouble()
+            DeviceForwardAxis.POSITIVE_Z -> sample.accelerationZ.toDouble()
+            DeviceForwardAxis.NEGATIVE_Z -> -sample.accelerationZ.toDouble()
         }
         // Static gravity compensation along the vehicle longitudinal axis (pitch angle)
         val gravityForwardOffset = 9.80665 * sin(pitchRad)
