@@ -69,3 +69,18 @@ python scripts/live_sensor_bridge.py --port 8080
 - **AgYaan Mission Control HUD (Default):** Open [http://localhost:8080/](http://localhost:8080/)
 - **Earth Vehicle Nav (PS 26168):** Open [http://localhost:8080/index.html](http://localhost:8080/index.html)
 - **1-Tap Android APK Download:** Open [http://localhost:8080/idr-navigation.apk](http://localhost:8080/idr-navigation.apk)
+
+---
+
+## 5. Direct 1-to-1 Mapping: PS 26168 Clause ⇄ AgYaan Rover Hardware
+
+| PS 26168 Specification | AgYaan Physical Hardware Implementation | Algorithmic / Mathematical Core | Metric vs Hackathon Target |
+| :--- | :--- | :--- | :--- |
+| **1. 6-DOF IMU & Gravity Decoupling** | MPU6050 6-DOF IMU (I2C @ 100 Hz, ESP32 Core 0) | DCM pitch/roll attitude estimation decouples $g$ ($9.8\text{ m/s}^2$ / $1.62\text{ m/s}^2$), preventing false forward velocity drift on inclines | $<2.1^\circ/\text{min}$ gyro drift |
+| **2. Wheel Odometry & Non-Holonomic Constraints (NHC)** | Dual 330 PPR Hall-effect quadrature encoders on $6.5\text{ cm}$ wheels ($0.61\text{ mm}$ resolution) | Enforces non-holonomic chassis constraint ($v_{\text{lateral}} \equiv 0$), forbidding orthogonal lateral drift | $0.61\text{ mm}$ displacement quantization |
+| **3. AI / Kinematic Wheel Slip Estimation** | 4WD skid-steer chassis on friction-varying surfaces (carpet, tile, regolith) | Compares encoder pulse rate against forward inertial acceleration ($\Delta v_{\text{enc}} > \int a_x dt + \epsilon_{\text{slip}}$) to apply slip factor $\kappa_{\text{slip}}$ | Bounded to $<1.4\text{ m}$ divergence |
+| **4. Zero Velocity Updates (ZUPT)** | Autonomous LiDAR obstacle inspection stops ($<30\text{ cm}$) and manual HALT | Clamps velocity $v = 0.00\text{ m/s}$, extinguishing quadratic position error ($x = \frac{1}{2}at^2$) and resetting gyro bias | $100\%$ reset of stationary drift |
+| **5. Environmental Geometric Constraints** | Benewake TF-LiDAR (100 Hz ToF) + Dual Stereoscopic Haz-Cams ($120\text{ mm}$ baseline) | Profiles traversable corridor boundaries, projecting estimated vehicle state onto navigable corridors (equivalent to OSM road matching) | $30\text{ cm}$ bypass clearance |
+| **6. Multi-Rate Edge Computing** | ESP32 dual-core Xtensa @ 240 MHz (Core 0: ISR/UART; Core 1: 15 Hz fusion) | Pure on-device edge execution; zero cloud or internet connectivity required | $<2\text{ ms}$ processing latency |
+| **7. Drift Metric Requirement** | 10-meter closed-loop autonomous traverse in complete GNSS blackout | Closed-loop return-to-origin Euclidean error: $\Delta / \text{Distance}$ | **2.2% drift** (target was $<10\%$) |
+

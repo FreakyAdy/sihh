@@ -62,6 +62,61 @@
     if (e.target === archModal) archModal.classList.remove("open");
   });
 
+  // PS Matrix Modal Elements
+  const psMatrixModal = document.getElementById("psMatrixModal");
+  const openPsMatrixBtn = document.getElementById("openPsMatrixBtn");
+  const closePsMatrixModalBtn = document.getElementById("closePsMatrixModalBtn");
+  const closePsMatrixBtn2 = document.getElementById("closePsMatrixBtn2");
+  const copyPitchBtn = document.getElementById("copyPitchBtn");
+  const judgePitchScriptText = document.getElementById("judgePitchScriptText");
+
+  if (openPsMatrixBtn && psMatrixModal) {
+    openPsMatrixBtn.addEventListener("click", () => psMatrixModal.classList.add("open"));
+  }
+  if (closePsMatrixModalBtn && psMatrixModal) {
+    closePsMatrixModalBtn.addEventListener("click", () => psMatrixModal.classList.remove("open"));
+  }
+  if (closePsMatrixBtn2 && psMatrixModal) {
+    closePsMatrixBtn2.addEventListener("click", () => psMatrixModal.classList.remove("open"));
+  }
+  if (psMatrixModal) {
+    psMatrixModal.addEventListener("click", (e) => {
+      if (e.target === psMatrixModal) psMatrixModal.classList.remove("open");
+    });
+  }
+  if (copyPitchBtn && judgePitchScriptText) {
+    copyPitchBtn.addEventListener("click", () => {
+      const textToCopy = judgePitchScriptText.innerText.replace(/[\n\r]+/g, " ").trim();
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const originalText = copyPitchBtn.innerText;
+        copyPitchBtn.innerText = "✅ Pitch Copied!";
+        copyPitchBtn.style.background = "rgba(16, 185, 129, 0.3)";
+        copyPitchBtn.style.borderColor = "var(--green-neon)";
+        copyPitchBtn.style.color = "var(--green-neon)";
+        setTimeout(() => {
+          copyPitchBtn.innerText = originalText;
+          copyPitchBtn.style.background = "rgba(245, 158, 11, 0.25)";
+          copyPitchBtn.style.borderColor = "rgba(245, 158, 11, 0.5)";
+          copyPitchBtn.style.color = "#fbbf24";
+        }, 3000);
+      }).catch(() => {
+        // Fallback for non-https/unsupported environments
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand("copy");
+          copyPitchBtn.innerText = "✅ Pitch Copied!";
+          setTimeout(() => { copyPitchBtn.innerText = "📋 Copy Pitch to Clipboard"; }, 3000);
+        } catch (err) {
+          console.warn("Clipboard copy failed", err);
+        }
+        document.body.removeChild(textArea);
+      });
+    });
+  }
+
   // Data Source Buttons
   const srcSimBtn = document.getElementById("srcSimBtn");
   const srcLiveBtn = document.getElementById("srcLiveBtn");
