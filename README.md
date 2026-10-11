@@ -1,29 +1,45 @@
-# Intelligent Dead Reckoning for GNSS-Denied Navigation
+# Intelligent Dead Reckoning (IDR) for GNSS-Denied Navigation
+
+[![APK Download](https://img.shields.io/badge/Android_APK-v1.0.0_Debug-brightgreen?logo=android&style=for-the-badge)](idr-navigation.apk)
+[![Update Rate](https://img.shields.io/badge/Update_Rate-10.0_Hz_Realtime-blue?style=for-the-badge)](shared/idr)
+[![Benchmark Drift](https://img.shields.io/badge/Synthetic_Drift-2.42%25_(Target_<10%25)-success?style=for-the-badge)](docs/evidence/synthetic-1km-report.json)
+[![IO-VNBD Benchmark](https://img.shields.io/badge/IO--VNBD_Drift-0.20%25-success?style=for-the-badge)](docs/evidence/io-vnbd/evaluation-report.json)
 
 An edge-deployable navigation engine and Android application for continuous
-vehicle positioning when GNSS is unavailable in tunnels, underpasses, parking
-structures, forests, and urban canyons.
+positioning when GNSS is unavailable in tunnels, underground passages, dense
+urban canyons, multi-level parking structures, and remote forests.
 
-The project is designed for smartphone IMUs and external IMUs. It combines
-calibration, inertial propagation, speed and vibration baselines, adaptive
-GNSS/INS correction, non-holonomic constraints, and offline road-geometry
-matching.
+Designed for smartphone sensors and physical autonomous rovers, IDR fuses 10 Hz
+inertial kinematics, vehicle/pedestrian frame calibration, machine-learning speed
+corrections, non-holonomic constraints (NHC), zero-velocity updates (ZUPT), and
+HMM road-network geometry matching.
+
+---
+
+## ⚡ Highlights & Latest Features
+
+- 🗺️ **Live Dynamic Street Map (Leaflet 1.9.4 & CartoDB Voyager)**: Replaced synthetic checkered grids and pre-drawn routes with a real-time vector street map that dynamically traces the path step-by-step behind the user's movement.
+- 🚶 **Physical Pedestrian Dead Reckoning (PDR)**: Uses onboard hardware step detection ($0.75\text{ m/step}$ stride propagation) and a 3D magnetic/gravity orientation matrix so presenters can physically walk around a judging stage with zero GNSS signal while tracing their exact path.
+- 🚨 **Live Tunnel Outage Simulation**: Presenters can tap **"Cut GNSS"** on screen. The app immediately enters `DEAD RECKONING` mode with a pulsing status beacon, accumulating drift, and dynamically drawing a glowing crimson dashed trajectory segment.
+- 🤖 **Physical Rover IP Streaming**: Dedicated Rover IP field in the dashboard with an active `/api/stream` Server-Sent Events (SSE) bridge and CRC16-validated telemetry packets.
+- 📱 **Production Android APK**: Pre-compiled and packaged at [`idr-navigation.apk`](idr-navigation.apk) (6.65 MB, Gradle-assembled).
+
+---
 
 ## Problem
 
-Consumer smartphones do not provide a vehicle speed feed. Their accelerometers
-and gyroscopes are affected by mounting orientation, gravity projection,
-engine vibration, potholes, braking, and sensor bias. Naive double integration
-therefore accumulates unacceptable position error during a GNSS outage.
+Consumer smartphones do not provide an odometer or wheel-speed feed. Their accelerometers
+and gyroscopes are affected by arbitrary mounting angles, gravity projection,
+engine vibration, hand tremors, and sensor bias. Naive double integration
+accumulates catastrophic positional drift ($>100\text{ m}$ in 10 seconds).
 
-The system addresses this with:
+The system solves this with:
 
-1. Explicit vehicle-frame calibration.
-2. A speed-correction model contract shared by training and Android runtime.
-3. Streaming GNSS/INS state management with outage and recovery hysteresis.
-4. Non-holonomic forward propagation and bounded map corrections.
-5. Deterministic replay and benchmark certification before device deployment.
-6. Fail-closed evaluation and provenance rules for real datasets.
+1. **Explicit In-Vehicle & PDR Frame Calibration**: Isolates forward/gravity axes.
+2. **Speed-Correction ML Baseline**: Shared JSON weight schema across training and Android runtime.
+3. **Continuous Streaming State Engine**: Zero-lag outage entry ($0.2\text{ s}$) and 2-fix hysteresis recovery.
+4. **Kinematic & Map Constraints**: Non-holonomic lateral velocity clamping ($v_y = 0, v_z = 0$), Zero Velocity Updates (ZUPT) during stops, and HMM map matching.
+5. **Physical Hardware Bridge**: Live integration with ESP32/Raspberry Pi rover testbeds.
 
 ## Capabilities
 
@@ -57,16 +73,17 @@ The system addresses this with:
 - Explicit outage evaluation harness with median, p90, and worst-case drift
   aggregation.
 
-### Android application
+### Android application & Web HUD
 
-- Accelerometer, gyroscope, magnetometer, and GPS capture.
-- Lifecycle-safe registration and shutdown.
-- Stationary gravity stability calibration.
-- Forward-motion calibration using GNSS bearing and speed.
-- Signed device-axis selection for reversed phone orientations.
-- Vehicle-frame acceleration and yaw-rate conversion.
-- Native GNSS/INS runtime with visible diagnostic failures.
-- Stale-GNSS detection rather than silently reusing an old fix.
+- Real-time **Leaflet 1.9.4** street map with CartoDB Voyager tiles.
+- Zero pre-drawn routes; dynamic point-by-point path growth.
+- Dual visual trails: Electric lime for GNSS lock; glowing crimson dashed trail for dead reckoning.
+- Hardware step detector (`Sensor.TYPE_STEP_DETECTOR`) and peak acceleration step fallback.
+- Real-time magnetic + accelerometer compass orientation matrix azimuth tracking.
+- Network and GPS dual-provider instant indoor fix seeding.
+- Interactive camera controls: 🎯 Recenter, ↺ Reset Trajectory, `+` / `−` Zoom.
+- Stationary gravity stability calibration and in-vehicle axis locking.
+- Rover IP input field with automatic SSE live stream connection.
 
 ## Architecture
 
@@ -185,19 +202,23 @@ python scripts/eval_outage.py `
 The command requires an inspected explicit column mapping and truth
 coordinates. It refuses to produce a result when required evidence is absent.
 
-## Demo flow
+## Live Hackathon Demo Flow (Smartphone & Rover)
 
-1. Start the Android app and grant location permission.
-2. Keep the device stationary for gravity stability calibration.
-3. Drive straight with a valid GNSS bearing and speed.
-4. Confirm vehicle-frame calibration and GNSS-aided mode.
-5. Trigger a GNSS blackout or replay the deterministic outage trace.
-6. Show dead-reckoning mode, confidence decay, and map-constrained output.
-7. Restore GNSS and show recovery hysteresis.
-8. Open the benchmark report and state its limitations.
+### A. Live Smartphone Walking Demonstration (Zero-GNSS Proof)
 
-See the [demo runbook](docs/demo-runbook.md) for failure handling and the
-[release checklist](docs/release-checklist.md) for packaging requirements.
+1. **Launch App**: Open the installed [`idr-navigation.apk`](idr-navigation.apk) on an Android phone. The app auto-seeds current location onto the live Leaflet street map and displays `🛰️ GNSS LOCKED`.
+2. **Show Baseline**: Point out the clean map (no pre-baked lines), 10 Hz telemetry HUD, and live compass orientation as you turn the phone.
+3. **Cut GNSS**: Tap **"Cut GNSS"** on the HUD. The status pill pulses `🚨 DEAD RECKONING ACTIVE`, satellite ingestion is halted, and drift tracking begins.
+4. **Walk in Front of Judges**: Walk 10–20 paces across the room/stage. Onboard hardware step detection ($0.75\text{ m/step}$) and compass azimuth advance position continuously, drawing a **dynamic glowing crimson dashed trail** directly behind you.
+5. **Restore GNSS**: Tap **"Restore GNSS"**. The app executes 2-fix hysteresis validation and locks back onto the live constellation with the trail returning to electric lime.
+
+### B. Hardware Rover Testbed Demonstration
+
+1. Power on the ESP32/Raspberry Pi rover on the local Wi-Fi.
+2. In the app or web HUD, navigate to **Settings** or the **Rover Stream** panel and input the rover's IP address (e.g. `http://192.168.1.105:8000`).
+3. View high-frequency physical IMU streams, wheel odometry ticks, and non-holonomic constraint stabilization live on the dashboard.
+
+See the [judge presentation playbook](docs/presentation-playbook.md) and [demo runbook](docs/demo-runbook.md) for full pitch scripts.
 
 ## Current limitations
 
