@@ -16,13 +16,21 @@ import org.sih.idr.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var sensorCapture: SensorCaptureController
-    private val vehicleFrameAdapter = VehicleFrameAdapter()
+    private val vehicleFrameAdapter = VehicleFrameAdapter().apply {
+        configure(forwardAxis = DeviceForwardAxis.POSITIVE_Y)
+    }
     private val vehicleCalibration = VehicleCalibration()
     private var navigationEngine = NativeNavigationEngine()
     private var sampleCount = 0L
     private var lastUiUpdateMillis = 0L
     private var mockOutage = false
     private var isNavigating = false
+    private var continuousLat = 28.6139
+    private var continuousLng = 77.2090
+    private var hasLockedGps = false
+    private var lastStepCount = 0L
+    private var lastTimestampNanos = 0L
+    private var currentHeadingDeg = 0.0
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +70,49 @@ class MainActivity : AppCompatActivity() {
                     } catch (_: Exception) {
                     }
 
+                    // Continuous Position & Dead Reckoning Kinematics
+                    if (sample.location != null && !mockOutage) {
+                        continuousLat = sample.location.latitude
+                        continuousLng = sample.location.longitude
+                        hasLockedGps = true
+                        if (sample.location.hasBearing() && sample.location.speed > 0.5f) {
+                            currentHeadingDeg = sample.location.bearing.toDouble()
+                        } else if (sample.azimuthDeg > 0.0) {
+                            currentHeadingDeg = sample.azimuthDeg
+                        }
+                    } else {
+                        // GPS Outage or Dead Reckoning active
+                        if (sample.azimuthDeg > 0.0) {
+                            currentHeadingDeg = sample.azimuthDeg
+                        } else if (lastTimestampNanos > 0L) {
+                            val dt = (sample.timestampNanos - lastTimestampNanos) / 1e9
+                            if (dt in 0.001..0.5) {
+                                currentHeadingDeg = (currentHeadingDeg - Math.toDegrees(sample.yawRateZ.toDouble()) * dt + 360.0) % 360.0
+                            }
+                        }
+
+                        if (lastStepCount == 0L) {
+                            lastStepCount = sample.stepCount
+                        }
+                        val deltaSteps = if (sample.stepCount >= lastStepCount) {
+                            (sample.stepCount - lastStepCount).coerceIn(0L, 5L)
+                        } else 0L
+
+                        if (deltaSteps > 0L) {
+                            lastStepCount = sample.stepCount
+                            val strideM = deltaSteps * 0.75
+                            val rad = Math.toRadians(currentHeadingDeg)
+                            val dLat = (strideM * kotlin.math.cos(rad)) / 111320.0
+                            val dLng = (strideM * kotlin.math.sin(rad)) / (111320.0 * kotlin.math.cos(Math.toRadians(continuousLat)))
+                            continuousLat += dLat
+                            continuousLng += dLng
+                        } else if (estimate != null && estimate.latitude != null && estimate.longitude != null) {
+                            continuousLat = estimate.latitude
+                            continuousLng = estimate.longitude
+                        }
+                    }
+                    lastTimestampNanos = sample.timestampNanos
+
                     val now = android.os.SystemClock.elapsedRealtime()
                     if (now - lastUiUpdateMillis < 100L) {
                         return
@@ -69,11 +120,14 @@ class MainActivity : AppCompatActivity() {
                     lastUiUpdateMillis = now
 
                     val currentEstimate = estimate
-                    val speedKmh = currentEstimate?.speedMps?.times(3.6)
-                        ?: sample.location?.speed?.toDouble()?.times(3.6)
-                        ?: 0.0
-                    val headingDeg = currentEstimate?.let { Math.toDegrees(it.headingRad) }
-                        ?: Math.toDegrees(sample.yawRateZ.toDouble())
+                    val speedKmh = if (mockOutage) {
+                        if (sample.stepCount > 0) 4.8 else 0.0
+                    } else {
+                        currentEstimate?.speedMps?.times(3.6)
+                            ?: sample.location?.speed?.toDouble()?.times(3.6)
+                            ?: 0.0
+                    }
+                    val headingDeg = currentHeadingDeg
                     val modeName = when {
                         mockOutage -> "DEAD RECKONING"
                         currentEstimate != null -> currentEstimate.mode.name.replace('_', ' ')
@@ -81,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                         else -> "CALIBRATION ${vehicleCalibration.stage.name}"
                     }
                     val drift = if (mockOutage) 1.9 else 0.0
-                    val distanceM = (sampleCount * 0.4).coerceAtLeast(0.0)
+                    val distanceM = if (sample.stepCount > 0) sample.stepCount * 0.75 else (sampleCount * 0.4).coerceAtLeast(0.0)
 
                     val ax = sample.accelerationX.toDouble()
                     val ay = sample.accelerationY.toDouble()
@@ -96,8 +150,19 @@ class MainActivity : AppCompatActivity() {
                         put("headingDeg", headingDeg)
                         put("driftPercent", drift)
                         put("distanceM", distanceM)
+                        put("stepCount", sample.stepCount)
                         put("mode", modeName)
                         put("isOutage", mockOutage)
+                        put("hasGps", sample.location != null && !mockOutage)
+                        put("lat", continuousLat)
+                        put("lng", continuousLng)
+
+                        sample.location?.let { loc ->
+                            put("rawLat", loc.latitude)
+                            put("rawLng", loc.longitude)
+                            put("accuracy", loc.accuracy.toDouble())
+                        }
+
                         put("accX", sample.accelerationX)
                         put("accY", sample.accelerationY)
                         put("gyrZ", sample.yawRateZ)
@@ -133,6 +198,12 @@ class MainActivity : AppCompatActivity() {
             webChromeClient = WebChromeClient()
             addJavascriptInterface(AndroidBridge(), "AndroidBridge")
             loadUrl("file:///android_asset/android-app.html")
+        }
+
+        if (hasLocationPermission()) {
+            sensorCapture.start()
+        } else {
+            requestLocationPermissionIfNeeded()
         }
     }
 
@@ -173,6 +244,9 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun setManualOrigin(lat: Double, lon: Double) {
             runOnUiThread {
+                continuousLat = lat
+                continuousLng = lon
+                hasLockedGps = true
                 sensorCapture.setManualOrigin(lat, lon)
             }
         }

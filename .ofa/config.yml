@@ -18,14 +18,15 @@ zones:
     paths:
       - mobile/
       - idr-navigation.apk/
-    owner: ShreeshantXD
+    owner: FreakyAdy
     description: Smartphone sensors, on-device inference, navigation UI, and offline maps
-    claimed_at: '2026-10-11T08:45:00.000Z'
+    claimed_at: '2026-10-11T09:13:56.229Z'
   frontend:
     paths:
       - web-demo/
-    owner: null
+    owner: FreakyAdy
     description: Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
+    claimed_at: '2026-10-11T09:14:02.308Z'
   shared:
     paths:
       - shared/
@@ -58,11 +59,6 @@ rules:
     - maps/
     - .github/
 locks:
-  - zone: mobile
-    owner: ShreeshantXD
-    claimed_at: '2026-10-11T08:45:00.000Z'
-    expires_at: '2026-10-12T08:45:00.000Z'
-    ttl_hours: 24
   - zone: shared
     owner: FreakyAdy
     claimed_at: '2026-10-11T08:43:10.079Z'
@@ -77,4 +73,14 @@ locks:
     owner: FreakyAdy
     claimed_at: '2026-10-11T08:43:15.370Z'
     expires_at: '2026-10-12T08:43:15.371Z'
+    ttl_hours: 24
+  - zone: mobile
+    owner: FreakyAdy
+    claimed_at: '2026-10-11T09:13:56.229Z'
+    expires_at: '2026-10-12T09:13:56.230Z'
+    ttl_hours: 24
+  - zone: frontend
+    owner: FreakyAdy
+    claimed_at: '2026-10-11T09:14:02.308Z'
+    expires_at: '2026-10-12T09:14:02.308Z'
     ttl_hours: 24

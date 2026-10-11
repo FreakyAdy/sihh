@@ -7,6 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Leaflet 1.9.4 Real-time Mapping Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <style>
     /* -------------------------------------------------------------
        PREMIUM DESIGN SYSTEM TOKENS (WARM NEUTRAL & SIGNATURE LIME)
@@ -813,13 +816,127 @@
       position: relative;
       margin: 8px 16px;
       border-radius: 28px;
-      background: var(--map-route-color);
+      background: var(--bg-card-subtle);
       overflow: hidden;
       box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.05);
       border: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    #liveMapContainer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: #f1f5f9;
+    }
+
+    :root[data-theme="dark"] #liveMapContainer {
+      background: #0f172a;
+    }
+
+    .leaflet-container {
+      background: #f1f5f9 !important;
+      font-family: inherit !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    :root[data-theme="dark"] .leaflet-container {
+      background: #0f172a !important;
+    }
+
+    :root[data-theme="dark"] .leaflet-tile-pane {
+      filter: brightness(0.85) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.35);
+    }
+
+    .leaflet-control-zoom, .leaflet-control-attribution {
+      display: none !important;
+    }
+
+    .leaflet-puck-wrapper {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .map-mode-pill {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(17, 20, 24, 0.88);
+      backdrop-filter: blur(12px);
+      padding: 6px 12px;
+      border-radius: 9999px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .map-mode-pill.outage {
+      background: rgba(220, 38, 38, 0.94);
+      border-color: rgba(254, 202, 202, 0.35);
+      box-shadow: 0 4px 18px rgba(220, 38, 38, 0.35);
+    }
+
+    .mode-pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-lime);
+      box-shadow: 0 0 8px var(--accent-lime);
+      animation: pulseGreen 1.5s infinite;
+    }
+
+    .map-mode-pill.outage .mode-pill-dot {
+      background: #ffffff;
+      box-shadow: 0 0 8px #ffffff;
+      animation: pulseRed 0.9s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    @keyframes pulseRed {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+
+    .map-coords-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 14px;
+      z-index: 500;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 4px 10px;
+      border-radius: 8px;
+      color: var(--text-heading);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      pointer-events: none;
+    }
+
+    :root[data-theme="dark"] .map-coords-badge {
+      background: rgba(17, 20, 24, 0.92);
+      color: #f1f5f9;
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
     .map-grid-mesh {
@@ -2198,22 +2315,19 @@
               </div>
             </section>
 
-            <!-- Vector Map Canvas -->
-            <section class="map-render-stage">
-              <div class="map-grid-mesh"></div>
+            <!-- Live Vector / Street Map Canvas -->
+            <section class="map-render-stage" id="mapRenderStage">
+              <!-- Leaflet Map Container -->
+              <div id="liveMapContainer"></div>
 
-              <!-- Route Trajectory Corridor SVG -->
-              <svg class="map-route-svg" viewBox="0 0 380 460" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
-                <!-- Glowing corridor envelope -->
-                <path d="M190,430 L190,260 Q190,170 235,120 L275,60" fill="none" stroke="rgba(203, 243, 56, 0.28)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Core electric lime active route -->
-                <path d="M190,430 L190,260 Q190,170 235,120 L275,60" fill="none" stroke="#cbf338" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Target Waypoint pin -->
-                <circle cx="275" cy="60" r="7" fill="#111418" stroke="#cbf338" stroke-width="3"/>
-              </svg>
+              <!-- Live Trajectory Mode Pill -->
+              <div class="map-mode-pill" id="mapModePill">
+                <span class="mode-pill-dot" id="mapModeDot"></span>
+                <span id="mapModeLabel">🛰️ GNSS LOCKED</span>
+              </div>
 
-              <!-- Vehicle Heading Puck -->
-              <div class="vehicle-puck-rig" id="vehiclePuck">
+              <!-- Vehicle Heading Puck Rig (hidden fallback / reference) -->
+              <div class="vehicle-puck-rig" id="vehiclePuck" style="display: none;">
                 <div class="puck-halo-ring"></div>
                 <svg class="puck-svg-cursor" viewBox="0 0 48 48">
                   <circle cx="24" cy="24" r="20" fill="rgba(203, 243, 56, 0.35)"/>
@@ -2222,10 +2336,17 @@
                 </svg>
               </div>
 
-              <!-- Zoom Dock -->
+              <!-- Zoom & Map Controls Dock -->
               <div class="map-zoom-dock">
-                <button class="zoom-btn-pill" id="zoomInBtn">+</button>
-                <button class="zoom-btn-pill" id="zoomOutBtn">−</button>
+                <button class="zoom-btn-pill" id="recenterBtn" title="Recenter Camera">🎯</button>
+                <button class="zoom-btn-pill" id="zoomInBtn" title="Zoom In">+</button>
+                <button class="zoom-btn-pill" id="zoomOutBtn" title="Zoom Out">−</button>
+                <button class="zoom-btn-pill" id="clearTrailBtn" title="Reset Trajectory">↺</button>
+              </div>
+
+              <!-- Live Coordinates Badge -->
+              <div class="map-coords-badge" id="mapCoordsBadge">
+                <span id="coordLat">28.61390° N</span> • <span id="coordLng">77.20900° E</span>
               </div>
             </section>
 
@@ -3057,6 +3178,9 @@
       const sub = document.getElementById('outageHeroSub');
       const switchBtn = document.getElementById('outageToggleSwitch');
       const switchText = document.getElementById('outageSwitchText');
+      const modePill = document.getElementById('mapModePill');
+      const modeLabel = document.getElementById('mapModeLabel');
+      const halo = document.getElementById('leafletPuckHalo');
 
       if (isBlackoutActive) {
         statusPulseDot.className = "status-pulse-dot outage";
@@ -3064,6 +3188,12 @@
         modeSubtitle.style.color = "var(--accent-crimson)";
         driftDisplayNum.textContent = "2.4";
         driftDisplayNum.style.color = "var(--accent-crimson)";
+
+        if (modePill && modeLabel) {
+          modePill.className = "map-mode-pill outage";
+          modeLabel.textContent = "🚨 DEAD RECKONING ACTIVE";
+        }
+        if (halo) halo.style.background = 'rgba(239, 68, 68, 0.45)';
 
         beacon.className = "state-beacon-circle outage";
         beacon.textContent = "🚨";
@@ -3081,6 +3211,12 @@
         modeSubtitle.style.color = "var(--accent-blue)";
         driftDisplayNum.textContent = "0.0";
         driftDisplayNum.style.color = "var(--accent-emerald)";
+
+        if (modePill && modeLabel) {
+          modePill.className = "map-mode-pill";
+          modeLabel.textContent = "🛰️ GNSS LOCKED";
+        }
+        if (halo) halo.style.background = 'var(--accent-lime-glow)';
 
         beacon.className = "state-beacon-circle";
         beacon.textContent = "🛰️";
@@ -3133,26 +3269,242 @@
 
     document.getElementById('quickCalibBtn').addEventListener('click', () => selectScreen('calib'));
 
-    // Zoom Controls
-    document.getElementById('zoomInBtn').addEventListener('click', () => {
-      zoomLevel = Math.min(zoomLevel + 0.2, 1.8);
-      vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
-    });
-    document.getElementById('zoomOutBtn').addEventListener('click', () => {
-      zoomLevel = Math.max(zoomLevel - 0.2, 0.6);
-      vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+    // -------------------------------------------------------------
+    // REAL-TIME DYNAMIC MAP ENGINE (LEAFLET + PDR INERTIAL TRAIL)
+    // -------------------------------------------------------------
+    let liveMap = null;
+    let livePuckMarker = null;
+    let gnssTrailPolyline = null;
+    let glowTrailPolyline = null;
+    let drTrailPolyline = null;
+    let originAnchorMarker = null;
+    let mapAutoFollow = true;
+    let isMapInitialized = false;
+
+    let currentLat = 28.6139;
+    let currentLng = 77.2090;
+    let lastRecordedLat = null;
+    let lastRecordedLng = null;
+    let trailCoordinates = [];
+    let drSegmentCoordinates = [];
+
+    function initLiveMap() {
+      if (liveMap || typeof L === 'undefined') return;
+      try {
+        const container = document.getElementById('liveMapContainer');
+        if (!container) return;
+
+        liveMap = L.map('liveMapContainer', {
+          center: [currentLat, currentLng],
+          zoom: 18,
+          zoomControl: false,
+          attributionControl: false
+        });
+
+        // Crisp street cartography tiles (CartoDB Voyager)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 20,
+          subdomains: 'abcd'
+        }).addTo(liveMap);
+
+        // Glow envelope polyline for nominal route
+        glowTrailPolyline = L.polyline([], {
+          color: 'rgba(203, 243, 56, 0.42)',
+          weight: 12,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(liveMap);
+
+        // Electric Lime Core route polyline
+        gnssTrailPolyline = L.polyline([], {
+          color: '#cbf338',
+          weight: 5,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(liveMap);
+
+        // Glowing Crimson Dead Reckoning polyline (drawn during GNSS outage)
+        drTrailPolyline = L.polyline([], {
+          color: '#ef4444',
+          weight: 5,
+          dashArray: '8, 8',
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(liveMap);
+
+        // Custom Vehicle Heading Puck Icon
+        const puckIcon = L.divIcon({
+          className: 'leaflet-puck-wrapper',
+          html: `
+            <div class="vehicle-puck-rig" style="position:relative; width:48px; height:48px; display:flex; align-items:center; justify-content:center;">
+              <div class="puck-halo-ring" id="leafletPuckHalo"></div>
+              <svg class="puck-svg-cursor" id="leafletPuckSvg" viewBox="0 0 48 48" style="width:42px; height:42px; transition: transform 0.15s ease-out;">
+                <circle cx="24" cy="24" r="20" fill="rgba(203, 243, 56, 0.35)"/>
+                <path d="M24,6 L38,40 L24,32 L10,40 Z" fill="#cbf338"/>
+                <path d="M24,6 L38,40 L24,32 L10,40 Z" fill="none" stroke="#111418" stroke-width="2.5" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          `,
+          iconSize: [48, 48],
+          iconAnchor: [24, 24]
+        });
+
+        livePuckMarker = L.marker([currentLat, currentLng], {
+          icon: puckIcon,
+          zIndexOffset: 1000
+        }).addTo(liveMap);
+
+        // Origin marker (P0 anchor)
+        originAnchorMarker = L.circleMarker([currentLat, currentLng], {
+          radius: 6,
+          fillColor: '#111418',
+          color: '#cbf338',
+          weight: 3,
+          fillOpacity: 1
+        }).addTo(liveMap);
+
+        // Break auto-follow when user drags map manually
+        liveMap.on('dragstart', () => {
+          mapAutoFollow = false;
+          const rBtn = document.getElementById('recenterBtn');
+          if (rBtn) rBtn.style.opacity = '0.6';
+        });
+
+        isMapInitialized = true;
+      } catch (err) {
+        console.warn("Leaflet map initialization warning:", err);
+      }
+    }
+
+    function updateMapPosition(lat, lng, headingDeg, isOutage) {
+      if (!isMapInitialized) {
+        currentLat = lat;
+        currentLng = lng;
+        initLiveMap();
+        if (!liveMap) return;
+      }
+
+      currentLat = lat;
+      currentLng = lng;
+
+      // Update coordinates badge
+      const latEl = document.getElementById('coordLat');
+      const lngEl = document.getElementById('coordLng');
+      if (latEl) latEl.textContent = `${lat >= 0 ? lat.toFixed(5) + '° N' : Math.abs(lat).toFixed(5) + '° S'}`;
+      if (lngEl) lngEl.textContent = `${lng >= 0 ? lng.toFixed(5) + '° E' : Math.abs(lng).toFixed(5) + '° W'}`;
+
+      // Update Map Mode Pill
+      const modePill = document.getElementById('mapModePill');
+      const modeLabel = document.getElementById('mapModeLabel');
+      if (modePill && modeLabel) {
+        if (isOutage) {
+          modePill.className = "map-mode-pill outage";
+          modeLabel.textContent = "🚨 DEAD RECKONING ACTIVE";
+        } else {
+          modePill.className = "map-mode-pill";
+          modeLabel.textContent = "🛰️ GNSS LOCKED";
+        }
+      }
+
+      // Update Heading Puck Marker
+      if (livePuckMarker) {
+        livePuckMarker.setLatLng([lat, lng]);
+        const svgCursor = document.getElementById('leafletPuckSvg');
+        if (svgCursor) {
+          svgCursor.style.transform = `rotate(${headingDeg}deg)`;
+        }
+        const halo = document.getElementById('leafletPuckHalo');
+        if (halo) {
+          halo.style.background = isOutage ? 'rgba(239, 68, 68, 0.45)' : 'var(--accent-lime-glow)';
+        }
+      }
+
+      // Dynamically extend trajectory polyline if moved >= 0.35m
+      let shouldAppend = false;
+      if (lastRecordedLat === null) {
+        shouldAppend = true;
+      } else {
+        const dLat = (lat - lastRecordedLat) * 111320;
+        const dLng = (lng - lastRecordedLng) * (111320 * Math.cos(lat * Math.PI / 180));
+        const distM = Math.sqrt(dLat * dLat + dLng * dLng);
+        if (distM >= 0.35) {
+          shouldAppend = true;
+        }
+      }
+
+      if (shouldAppend) {
+        lastRecordedLat = lat;
+        lastRecordedLng = lng;
+        const newPoint = [lat, lng];
+        trailCoordinates.push(newPoint);
+
+        if (isOutage) {
+          drSegmentCoordinates.push(newPoint);
+          if (drTrailPolyline) drTrailPolyline.setLatLngs(drSegmentCoordinates);
+        } else {
+          if (gnssTrailPolyline) gnssTrailPolyline.setLatLngs(trailCoordinates);
+          if (glowTrailPolyline) glowTrailPolyline.setLatLngs(trailCoordinates);
+        }
+      }
+
+      // Auto-follow map pan
+      if (mapAutoFollow && liveMap) {
+        liveMap.panTo([lat, lng], { animate: true, duration: 0.3 });
+      }
+    }
+
+    // Map Controls
+    document.getElementById('recenterBtn').addEventListener('click', () => {
+      mapAutoFollow = true;
+      const rBtn = document.getElementById('recenterBtn');
+      if (rBtn) rBtn.style.opacity = '1';
+      if (liveMap) {
+        liveMap.panTo([currentLat, currentLng], { animate: true });
+        liveMap.setZoom(18);
+      }
+      triggerToast("🎯 Camera Locked to User Position");
     });
 
-    // Fallback simulation ONLY for offline static HTML preview without Android or Backend
+    document.getElementById('clearTrailBtn').addEventListener('click', () => {
+      trailCoordinates = [[currentLat, currentLng]];
+      drSegmentCoordinates = [];
+      lastRecordedLat = currentLat;
+      lastRecordedLng = currentLng;
+      if (gnssTrailPolyline) gnssTrailPolyline.setLatLngs(trailCoordinates);
+      if (glowTrailPolyline) glowTrailPolyline.setLatLngs(trailCoordinates);
+      if (drTrailPolyline) drTrailPolyline.setLatLngs([]);
+      if (originAnchorMarker) originAnchorMarker.setLatLng([currentLat, currentLng]);
+      triggerToast("↺ Dynamic Trail Reset to P₀");
+    });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      if (liveMap) liveMap.zoomIn();
+    });
+
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      if (liveMap) liveMap.zoomOut();
+    });
+
+    window.addEventListener('DOMContentLoaded', initLiveMap);
+    setTimeout(initLiveMap, 400);
+
+    // Standalone fallback simulation ONLY for browser rehearsals without physical phone
     let isBackendConnected = false;
     function startSimFallback() {
       if (simInterval || window.AndroidBridge || isBackendConnected) return;
       simInterval = setInterval(() => {
-        heading = (heading + 0.5) % 360;
-        speed = isBlackoutActive ? 15.0 : 20.0;
-        speedDisplayNum.textContent = Math.round(speed * 3.6);
-        vehiclePuck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
-      }, 100);
+        heading = (heading + 1.2) % 360;
+        speed = isBlackoutActive ? 4.5 : 5.0;
+        speedDisplayNum.textContent = Math.round(speed);
+
+        // Step forward along heading
+        const strideMeters = 0.70;
+        const rad = (heading * Math.PI) / 180;
+        currentLat += (strideMeters * Math.cos(rad)) / 111320;
+        currentLng += (strideMeters * Math.sin(rad)) / (111320 * Math.cos(currentLat * Math.PI / 180));
+
+        updateMapPosition(currentLat, currentLng, heading, isBlackoutActive);
+      }, 350);
     }
 
     function stopSimFallback() {
@@ -3161,6 +3513,23 @@
         simInterval = null;
       }
     }
+
+    // Keyboard walking simulation for laptop browser demo
+    window.addEventListener('keydown', (e) => {
+      if (window.AndroidBridge) return;
+      if (e.key === 'ArrowUp' || e.key === 'w') {
+        const rad = (heading * Math.PI) / 180;
+        currentLat += (0.8 * Math.cos(rad)) / 111320;
+        currentLng += (0.8 * Math.sin(rad)) / (111320 * Math.cos(currentLat * Math.PI / 180));
+        updateMapPosition(currentLat, currentLng, heading, isBlackoutActive);
+      } else if (e.key === 'ArrowLeft' || e.key === 'a') {
+        heading = (heading - 15 + 360) % 360;
+        updateMapPosition(currentLat, currentLng, heading, isBlackoutActive);
+      } else if (e.key === 'ArrowRight' || e.key === 'd') {
+        heading = (heading + 15) % 360;
+        updateMapPosition(currentLat, currentLng, heading, isBlackoutActive);
+      }
+    });
 
     // -------------------------------------------------------------
     // SCREEN 2: INCLINOMETER CALIBRATION (REAL SENSORS)
@@ -3219,6 +3588,9 @@
         heading = Number(data.headingDeg);
         const puck = document.getElementById('vehiclePuck');
         if (puck) puck.style.transform = `scale(${zoomLevel}) rotate(${heading}deg)`;
+      }
+      if (typeof data.lat !== 'undefined' && typeof data.lng !== 'undefined') {
+        updateMapPosition(Number(data.lat), Number(data.lng), heading, isBlackoutActive);
       }
       if (data.mode) {
         const modeEl = document.getElementById('modeSubtitle');

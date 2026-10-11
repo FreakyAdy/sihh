@@ -27,6 +27,8 @@ data class PhoneSensorSample(
     val magneticFieldY: Float,
     val magneticFieldZ: Float,
     val location: Location?,
+    val stepCount: Long = 0L,
+    val azimuthDeg: Double = 0.0,
 )
 
 interface SensorCaptureListener {
@@ -46,14 +48,22 @@ class SensorCaptureController(
     private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     private val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+    private val stepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
+
     private var latestAcceleration = FloatArray(3)
     private var latestGyroscope = FloatArray(3)
     private var latestMagneticField = FloatArray(3)
+    private val rotationMatrix = FloatArray(9)
+    private val inclinationMatrix = FloatArray(9)
+    private val orientationAngles = FloatArray(3)
+    private var currentAzimuthDeg = 0.0
     private var latestLocation: Location? = null
     private var latestLocationReceivedNanos = 0L
     private var lastEmittedLocationNanos = 0L
     private var running = false
     private var mockOutageActive = false
+    private var totalSteps = 0L
+    private var lastStepMillis = 0L
 
     fun setManualOrigin(latitude: Double, longitude: Double) {
         val mock = Location("manual_venue_origin").apply {
@@ -83,16 +93,16 @@ class SensorCaptureController(
         }
 
         override fun onProviderEnabled(provider: String) {
-            listener.onHealthChanged("GNSS provider enabled")
+            listener.onHealthChanged("GNSS provider enabled: $provider")
         }
 
         override fun onProviderDisabled(provider: String) {
-            listener.onHealthChanged("GNSS provider disabled")
+            listener.onHealthChanged("GNSS provider disabled: $provider")
         }
 
         @Deprecated("Required for API compatibility")
         override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
-            listener.onHealthChanged("GNSS provider status changed")
+            listener.onHealthChanged("GNSS provider status changed: $provider")
         }
     }
 
@@ -120,14 +130,45 @@ class SensorCaptureController(
         magnetometer?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
+        stepDetector?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_FASTEST)
+        }
+
+        // Immediately seed last known location so map doesn't start blank
         try {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                LOCATION_INTERVAL_MS,
-                LOCATION_DISTANCE_M,
-                locationListener,
-                Looper.getMainLooper(),
-            )
+            val lastGps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            val lastNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            val best = when {
+                lastGps != null && lastNet != null -> if (lastGps.time >= lastNet.time) lastGps else lastNet
+                lastGps != null -> lastGps
+                else -> lastNet
+            }
+            if (best != null) {
+                latestLocation = best
+                latestLocationReceivedNanos = SystemClock.elapsedRealtimeNanos()
+            }
+        } catch (_: SecurityException) {
+        }
+
+        try {
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    LOCATION_INTERVAL_MS,
+                    LOCATION_DISTANCE_M,
+                    locationListener,
+                    Looper.getMainLooper(),
+                )
+            }
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    LOCATION_INTERVAL_MS,
+                    LOCATION_DISTANCE_M,
+                    locationListener,
+                    Looper.getMainLooper(),
+                )
+            }
         } catch (securityException: SecurityException) {
             sensorManager.unregisterListener(this)
             listener.onHealthChanged("GNSS permission was revoked")
@@ -151,9 +192,28 @@ class SensorCaptureController(
     override fun onSensorChanged(event: SensorEvent) {
         if (!running) return
         when (event.sensor.type) {
-            Sensor.TYPE_ACCELEROMETER -> latestAcceleration = event.values.copyOf()
+            Sensor.TYPE_STEP_DETECTOR -> {
+                totalSteps += 1
+            }
+            Sensor.TYPE_ACCELEROMETER -> {
+                latestAcceleration = event.values.copyOf()
+                val mag = kotlin.math.sqrt(
+                    event.values[0] * event.values[0] +
+                    event.values[1] * event.values[1] +
+                    event.values[2] * event.values[2]
+                )
+                // Fallback step detector if physical step detector sensor is missing on device
+                if (stepDetector == null && mag > 12.2f && (SystemClock.elapsedRealtime() - lastStepMillis > 340L)) {
+                    lastStepMillis = SystemClock.elapsedRealtime()
+                    totalSteps += 1
+                }
+                updateCompassOrientation()
+            }
             Sensor.TYPE_GYROSCOPE -> latestGyroscope = event.values.copyOf()
-            Sensor.TYPE_MAGNETIC_FIELD -> latestMagneticField = event.values.copyOf()
+            Sensor.TYPE_MAGNETIC_FIELD -> {
+                latestMagneticField = event.values.copyOf()
+                updateCompassOrientation()
+            }
             else -> return
         }
         listener.onSample(
@@ -178,8 +238,19 @@ class SensorCaptureController(
                         lastEmittedLocationNanos = latestLocationReceivedNanos
                     }
                     ?.let(::Location),
+                stepCount = totalSteps,
+                azimuthDeg = currentAzimuthDeg,
             ),
         )
+    }
+
+    private fun updateCompassOrientation() {
+        if (SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, latestAcceleration, latestMagneticField)) {
+            SensorManager.getOrientation(rotationMatrix, orientationAngles)
+            var azimuth = Math.toDegrees(orientationAngles[0].toDouble())
+            if (azimuth < 0.0) azimuth += 360.0
+            currentAzimuthDeg = azimuth
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
