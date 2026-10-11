@@ -7,26 +7,25 @@ zones:
       - ml/
     owner: FreakyAdy
     description: IO-VNBD ingestion, preprocessing, training, evaluation, and model exports
-    claimed_at: '2026-10-09T23:17:44.896Z'
+    claimed_at: '2026-10-11T08:43:15.093Z'
   engine:
     paths:
       - edge-engine/
     owner: FreakyAdy
     description: Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
-    claimed_at: '2026-10-09T23:17:45.186Z'
+    claimed_at: '2026-10-11T08:43:15.370Z'
   mobile:
     paths:
       - mobile/
       - idr-navigation.apk/
-    owner: Krushna
+    owner: ShreeshantXD
     description: Smartphone sensors, on-device inference, navigation UI, and offline maps
-    claimed_at: '2026-10-10T20:22:26.101Z'
+    claimed_at: '2026-10-11T08:45:00.000Z'
   frontend:
     paths:
       - web-demo/
-    owner: Krushna
+    owner: null
     description: Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
-    claimed_at: '2026-10-10T07:56:16.534Z'
   shared:
     paths:
       - shared/
@@ -48,7 +47,7 @@ zones:
       - run_demo.ps1/
     owner: FreakyAdy
     description: Main-operator-owned contracts, fixtures, CI, documentation, and map tooling
-    claimed_at: '2026-10-09T21:12:23.573Z'
+    claimed_at: '2026-10-11T08:43:10.079Z'
 rules:
   require_all_owners: true
   default_branch: main
@@ -59,28 +58,23 @@ rules:
     - maps/
     - .github/
 locks:
+  - zone: mobile
+    owner: ShreeshantXD
+    claimed_at: '2026-10-11T08:45:00.000Z'
+    expires_at: '2026-10-12T08:45:00.000Z'
+    ttl_hours: 24
   - zone: shared
     owner: FreakyAdy
-    claimed_at: '2026-10-09T21:12:23.573Z'
-    expires_at: '2026-10-10T21:12:23.578Z'
+    claimed_at: '2026-10-11T08:43:10.079Z'
+    expires_at: '2026-10-12T08:43:10.080Z'
     ttl_hours: 24
   - zone: ml
     owner: FreakyAdy
-    claimed_at: '2026-10-09T23:17:44.896Z'
-    expires_at: '2026-10-10T23:17:44.897Z'
+    claimed_at: '2026-10-11T08:43:15.093Z'
+    expires_at: '2026-10-12T08:43:15.094Z'
     ttl_hours: 24
   - zone: engine
     owner: FreakyAdy
-    claimed_at: '2026-10-09T23:17:45.186Z'
-    expires_at: '2026-10-10T23:17:45.186Z'
-    ttl_hours: 24
-  - zone: frontend
-    owner: Krushna
-    claimed_at: '2026-10-10T07:56:16.534Z'
-    expires_at: '2026-10-11T07:56:16.535Z'
-    ttl_hours: 24
-  - zone: mobile
-    owner: Krushna
-    claimed_at: '2026-10-10T20:22:26.101Z'
-    expires_at: '2026-10-11T20:22:26.102Z'
+    claimed_at: '2026-10-11T08:43:15.370Z'
+    expires_at: '2026-10-12T08:43:15.371Z'
     ttl_hours: 24

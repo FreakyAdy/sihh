@@ -22,11 +22,11 @@ that your developer has claimed.
 - Paths: `edge-engine/`
 - Platform-neutral GNSS/INS fusion, dead reckoning, map constraints, and adapters
 
-### mobile — 🔴 Claimed by **@Krushna**
+### mobile — 🔴 Claimed by **@ShreeshantXD**
 - Paths: `mobile/`, `idr-navigation.apk/`
 - Smartphone sensors, on-device inference, navigation UI, and offline maps
 
-### frontend — 🔴 Claimed by **@Krushna**
+### frontend — 🟢 Available
 - Paths: `web-demo/`
 - Web demo presentation layer, Apple Maps UI, telemetry HUD, and map canvas
 
