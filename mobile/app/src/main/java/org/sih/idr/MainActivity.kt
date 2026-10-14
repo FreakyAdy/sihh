@@ -31,6 +31,11 @@ class MainActivity : AppCompatActivity() {
     private var lastStepCount = 0L
     private var lastTimestampNanos = 0L
     private var currentHeadingDeg = 0.0
+    // Distance & speed derived from steps
+    private var distanceMeters = 0.0
+    private var lastStepForSpeed = 0L
+    private var lastSpeedTimestampNanos = 0L
+    private var stepSpeedKmh = 0.0
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,14 +80,16 @@ class MainActivity : AppCompatActivity() {
                         continuousLat = sample.location.latitude
                         continuousLng = sample.location.longitude
                         hasLockedGps = true
+                        // Keep step baseline current so first DR step is delta=0 not all steps since boot
+                        lastStepCount = sample.stepCount
                         if (sample.location.hasBearing() && sample.location.speed > 0.5f) {
                             currentHeadingDeg = sample.location.bearing.toDouble()
-                        } else if (sample.azimuthDeg > 0.0) {
+                        } else if (sample.azimuthDeg >= 0.0) {
                             currentHeadingDeg = sample.azimuthDeg
                         }
                     } else {
-                        // GPS Outage or Dead Reckoning active
-                        if (sample.azimuthDeg > 0.0) {
+                        // GPS Outage or Dead Reckoning active — PDR always runs
+                        if (sample.azimuthDeg >= 0.0) {
                             currentHeadingDeg = sample.azimuthDeg
                         } else if (lastTimestampNanos > 0L) {
                             val dt = (sample.timestampNanos - lastTimestampNanos) / 1e9
@@ -91,7 +98,8 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
 
-                        if (lastStepCount == 0L) {
+                        // Seed step baseline on first DR frame
+                        if (lastStepCount == 0L || lastStepCount > sample.stepCount) {
                             lastStepCount = sample.stepCount
                         }
                         val deltaSteps = if (sample.stepCount >= lastStepCount) {
@@ -101,6 +109,15 @@ class MainActivity : AppCompatActivity() {
                         if (deltaSteps > 0L) {
                             lastStepCount = sample.stepCount
                             val strideM = deltaSteps * 0.75
+                            distanceMeters += strideM
+                            // Update step-cadence speed
+                            val dtSec = if (lastSpeedTimestampNanos > 0L)
+                                (sample.timestampNanos - lastSpeedTimestampNanos) / 1e9 else 0.0
+                            if (dtSec >= 0.4) {
+                                stepSpeedKmh = (strideM / dtSec) * 3.6
+                                lastSpeedTimestampNanos = sample.timestampNanos
+                                lastStepForSpeed = sample.stepCount
+                            }
                             val rad = Math.toRadians(currentHeadingDeg)
                             val dLat = (strideM * kotlin.math.cos(rad)) / 111320.0
                             val dLng = (strideM * kotlin.math.sin(rad)) / (111320.0 * kotlin.math.cos(Math.toRadians(continuousLat)))
@@ -120,22 +137,31 @@ class MainActivity : AppCompatActivity() {
                     lastUiUpdateMillis = now
 
                     val currentEstimate = estimate
-                    val speedKmh = if (mockOutage) {
-                        if (sample.stepCount > 0) 4.8 else 0.0
-                    } else {
-                        currentEstimate?.speedMps?.times(3.6)
-                            ?: sample.location?.speed?.toDouble()?.times(3.6)
-                            ?: 0.0
+                    val isActualOutage = mockOutage ||
+                        (currentEstimate?.mode == NativeNavigationMode.DEAD_RECKONING) ||
+                        (sample.location == null)  // PDR works with or without prior GPS fix
+                    // Step-cadence speed: decay gradually when no new step arrives
+                    if (sample.stepCount == lastStepForSpeed && lastSpeedTimestampNanos > 0L) {
+                        val idleSec = (sample.timestampNanos - lastSpeedTimestampNanos) / 1e9
+                        if (idleSec > 2.5) stepSpeedKmh = 0.0
+                    }
+                    val speedKmh = when {
+                        isActualOutage && stepSpeedKmh > 0.1 -> stepSpeedKmh
+                        isActualOutage -> 0.0
+                        currentEstimate != null && currentEstimate.speedMps > 0.1 -> currentEstimate.speedMps * 3.6
+                        sample.location != null && sample.location.hasSpeed() && sample.location.speed > 0.3f ->
+                            sample.location.speed.toDouble() * 3.6
+                        else -> stepSpeedKmh
                     }
                     val headingDeg = currentHeadingDeg
                     val modeName = when {
-                        mockOutage -> "DEAD RECKONING"
+                        isActualOutage -> "DEAD RECKONING"
                         currentEstimate != null -> currentEstimate.mode.name.replace('_', ' ')
                         sample.location != null -> "GNSS LOCKED"
                         else -> "CALIBRATION ${vehicleCalibration.stage.name}"
                     }
                     val drift = if (mockOutage) 1.9 else 0.0
-                    val distanceM = if (sample.stepCount > 0) sample.stepCount * 0.75 else (sampleCount * 0.4).coerceAtLeast(0.0)
+                    val distanceM = distanceMeters
 
                     val ax = sample.accelerationX.toDouble()
                     val ay = sample.accelerationY.toDouble()
@@ -145,14 +171,15 @@ class MainActivity : AppCompatActivity() {
                     val isCalibrated = vehicleFrameAdapter.isConfigured()
                     val calibStage = vehicleCalibration.stage.name
 
+
                     val telemetryJson = JSONObject().apply {
                         put("speedKmh", speedKmh)
                         put("headingDeg", headingDeg)
-                        put("driftPercent", drift)
+                        put("driftPercent", if (isActualOutage) 1.9 else 0.0)
                         put("distanceM", distanceM)
                         put("stepCount", sample.stepCount)
                         put("mode", modeName)
-                        put("isOutage", mockOutage)
+                        put("isOutage", isActualOutage)
                         put("hasGps", sample.location != null && !mockOutage)
                         put("lat", continuousLat)
                         put("lng", continuousLng)
@@ -230,6 +257,11 @@ class MainActivity : AppCompatActivity() {
                 vehicleCalibration.reset()
                 vehicleFrameAdapter.reset()
                 navigationEngine.reset()
+                distanceMeters = 0.0
+                stepSpeedKmh = 0.0
+                lastStepForSpeed = 0L
+                lastSpeedTimestampNanos = 0L
+                lastStepCount = 0L
             }
         }
 

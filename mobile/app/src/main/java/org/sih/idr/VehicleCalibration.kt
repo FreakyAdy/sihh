@@ -24,7 +24,7 @@ class VehicleCalibration(
     private val stationarySampleTarget: Int = 50,
     private val motionSampleTarget: Int = 10,
     private val stationaryVarianceLimit: Double = 0.8,
-    private val minimumMotionSpeedMps: Float = 2.0f,
+    private val minimumMotionSpeedMps: Float = 0.5f,
 ) {
     private val stationarySamples = mutableListOf<PhoneSensorSample>()
     private val motionSamples = mutableListOf<PhoneSensorSample>()

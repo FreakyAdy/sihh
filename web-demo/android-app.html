@@ -2282,7 +2282,7 @@
         <!-- Android Status Bar -->
         <header class="phone-status-strip">
           <div>
-            <span style="font-weight: 800;">9:41</span>
+            <span class="phone-status-time" style="font-weight: 800;">--:--</span>
             <span>📍</span>
           </div>
           <div class="status-network-icons">
@@ -2306,7 +2306,7 @@
                 <div class="status-pulse-dot" id="statusPulseDot"></div>
                 <div>
                   <div class="hud-mode-heading">IDR Navigator</div>
-                  <div class="hud-mode-sub" id="modeSubtitle">GNSS LOCKED</div>
+                  <div class="hud-mode-sub" id="modeSubtitle">INITIALIZING</div>
                 </div>
               </div>
               <div class="hud-tag-chips">
@@ -2323,7 +2323,7 @@
               <!-- Live Trajectory Mode Pill -->
               <div class="map-mode-pill" id="mapModePill">
                 <span class="mode-pill-dot" id="mapModeDot"></span>
-                <span id="mapModeLabel">🛰️ GNSS LOCKED</span>
+                <span id="mapModeLabel">🛰️ INITIALIZING</span>
               </div>
 
               <!-- Vehicle Heading Puck Rig (hidden fallback / reference) -->
@@ -3263,6 +3263,8 @@
         startActionText.textContent = "START";
         startActionBtn.classList.remove('running');
         speedDisplayNum.textContent = "0";
+        const distEl = document.getElementById('distDisplayNum');
+        if (distEl) distEl.textContent = "0";
         stopSimFallback();
       }
     });
@@ -3301,11 +3303,19 @@
           attributionControl: false
         });
 
-        // Crisp street cartography tiles (CartoDB Voyager)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // OpenStreetMap Real-Time Cartography (100% Free, Zero API Key Required)
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
           maxZoom: 20,
-          subdomains: 'abcd'
-        }).addTo(liveMap);
+          subdomains: 'abc',
+          attribution: '&copy; OpenStreetMap contributors'
+        });
+        osmLayer.on('tileerror', function(error) {
+          if (error.tile && !error.tile._failed) {
+            error.tile._failed = true;
+            error.tile.src = error.tile.src.replace(/tile\.openstreetmap\.fr\/osmfr/, 'tile.openstreetmap.org');
+          }
+        });
+        osmLayer.addTo(liveMap);
 
         // Glow envelope polyline for nominal route
         glowTrailPolyline = L.polyline([], {
@@ -3371,17 +3381,27 @@
         });
 
         isMapInitialized = true;
+        // Flush any position that arrived before map was ready
+        if (pendingPosition) {
+          const p = pendingPosition;
+          pendingPosition = null;
+          updateMapPosition(p.lat, p.lng, p.headingDeg, p.isOutage);
+        }
       } catch (err) {
         console.warn("Leaflet map initialization warning:", err);
       }
     }
 
+    let pendingPosition = null;
     function updateMapPosition(lat, lng, headingDeg, isOutage) {
       if (!isMapInitialized) {
         currentLat = lat;
         currentLng = lng;
+        pendingPosition = { lat, lng, headingDeg, isOutage };
         initLiveMap();
         if (!liveMap) return;
+        // If map initialized synchronously, flush now
+        pendingPosition = null;
       }
 
       currentLat = lat;
@@ -3436,12 +3456,14 @@
         lastRecordedLat = lat;
         lastRecordedLng = lng;
         const newPoint = [lat, lng];
-        trailCoordinates.push(newPoint);
 
         if (isOutage) {
+          // Dead-reckoning segment — crimson dashed trail only
           drSegmentCoordinates.push(newPoint);
           if (drTrailPolyline) drTrailPolyline.setLatLngs(drSegmentCoordinates);
         } else {
+          // GNSS-aided segment — lime core + glow trails only
+          trailCoordinates.push(newPoint);
           if (gnssTrailPolyline) gnssTrailPolyline.setLatLngs(trailCoordinates);
           if (glowTrailPolyline) glowTrailPolyline.setLatLngs(trailCoordinates);
         }
@@ -3574,7 +3596,10 @@
 
       if (typeof data.speedKmh !== 'undefined') {
         const speedEl = document.getElementById('speedDisplayNum');
-        if (speedEl) speedEl.textContent = Math.round(data.speedKmh);
+        if (speedEl) {
+          const spd = Number(data.speedKmh);
+          speedEl.textContent = spd >= 0.3 ? spd.toFixed(1) : '0';
+        }
       }
       if (typeof data.driftPercent !== 'undefined') {
         const driftEl = document.getElementById('driftDisplayNum');
@@ -3602,6 +3627,12 @@
         }
       }
       if (typeof data.isOutage !== 'undefined' && data.isOutage !== isBlackoutActive) {
+        // G5+G6: when transitioning into outage, reset and seed DR trail from last GNSS point
+        if (data.isOutage && !isBlackoutActive) {
+          drSegmentCoordinates = [];
+          const lastGnss = trailCoordinates[trailCoordinates.length - 1];
+          if (lastGnss) drSegmentCoordinates.push(lastGnss);
+        }
         toggleTunnelBlackout(Boolean(data.isOutage));
       }
 
@@ -3638,14 +3669,20 @@
         calibBtn.classList.add('locked');
         calibBtnText.textContent = "ALIGNMENT LOCKED (+Y)";
         calibBar.style.width = "100%";
+      } else if (data.calibStage === 'FAILED') {
+        // U3: Show clear FAILED state so user knows to recalibrate
+        calibBtn.disabled = false;
+        calibBtn.classList.remove('locked');
+        calibBtnText.textContent = "⚠️ CALIBRATION FAILED — Hold Still & Retry";
+        calibBar.style.width = "0%";
+        calibBar.style.background = 'var(--accent-crimson)';
+        triggerToast("❌ Calibration failed — too much motion. Hold phone still on a flat surface.");
       } else if (data.calibStage) {
         calibBtnText.textContent = "CALIBRATING: " + data.calibStage;
       }
     };
 
-    // -------------------------------------------------------------
-    // LIVE SSE BACKEND BRIDGE FOR BROWSER DEMO
-    // -------------------------------------------------------------
+    // F4: Fixed SSE bridge — no fake 24 km/h fallback, no fake roll/pitch
     function connectBackendSse() {
       if (window.AndroidBridge) return;
       try {
@@ -3654,6 +3691,10 @@
           isBackendConnected = true;
           console.log("Connected to IDR Live Sensor Bridge (/api/stream)");
           triggerToast("🟢 Connected to Live Sensor Bridge");
+        };
+        sse.onerror = () => {
+          if (isBackendConnected) triggerToast("⚠️ Sensor bridge disconnected — is the server running?");
+          isBackendConnected = false;
         };
         sse.onmessage = (event) => {
           try {
@@ -3664,27 +3705,42 @@
             const gz = payload.gyro ? (payload.gyro.rate_rps || 0) : 0;
             const hdg = payload.gyro ? (payload.gyro.heading_deg || payload.gyro.yaw_deg || 0) : 0;
             const hasLoc = payload.has_location !== false;
-            const speedKmh = payload.location ? (payload.location.speed * 3.6) : (hasLoc ? 24 : 0);
+            // Use real GPS speed only — no fake fallback values
+            const speedKmh = (hasLoc && payload.location && payload.location.speed > 0)
+              ? (payload.location.speed * 3.6) : 0;
 
             window.onAndroidTelemetry({
               speedKmh: speedKmh,
               headingDeg: hdg,
               driftPercent: payload.mock_outage ? 2.1 : 0.0,
               distanceM: payload.distance_m || 0,
-              mode: payload.mock_outage ? "DEAD RECKONING" : (hasLoc ? "GNSS LOCKED" : "INERTIAL COAST"),
-              isOutage: payload.mock_outage,
+              mode: payload.mock_outage ? "DEAD RECKONING" : (hasLoc ? "GNSS LOCKED" : "INITIALIZING"),
+              isOutage: Boolean(payload.mock_outage) || !hasLoc,
               accX: ax,
               accY: ay,
               gyrZ: gz,
-              rollRad: ax * 0.08,
-              pitchRad: ay * 0.08,
-              isCalibrated: true
+              isCalibrated: hasLoc
             });
           } catch (err) {}
         };
       } catch (err) {}
     }
     connectBackendSse();
+
+    // U5: Live real clock — replaces static 9:41
+    (function startClock() {
+      function updateClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const timeStr = `${hh}:${mm}`;
+        document.querySelectorAll('.phone-time-display, .phone-status-time').forEach(el => {
+          el.textContent = timeStr;
+        });
+      }
+      updateClock();
+      setInterval(updateClock, 15000);
+    })();
 
     // Auto-detect Android App environment
     if (window.AndroidBridge || navigator.userAgent.includes('Android') || window.innerWidth <= 680) {

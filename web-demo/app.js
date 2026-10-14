@@ -156,6 +156,12 @@ function connectLiveStream() {
           liveSensor.hasLocation = Boolean(data.has_location);
           sim.manualOutageActive = !data.has_location || Boolean(data.mock_outage);
         }
+        // Capture real GPS speed (m/s → km/h) from SSE payload
+        if (data.location && typeof data.location.speed === 'number') {
+          liveSensor.speedKmh = data.location.speed * 3.6;
+        } else if (!liveSensor.hasLocation || sim.manualOutageActive) {
+          liveSensor.speedKmh = 0;
+        }
         if (sim.activeScenario && sim.activeScenario.isLive) {
           render();
         }
@@ -372,11 +378,12 @@ function updatePhysics() {
 
   // Speed propagation
   if (sc.isLive && liveSensor.active) {
-    if (liveSensor.accelMag < 0.35) {
+    // Use real GPS speed when available; fall back to 0 (not fake accel formula)
+    if (typeof liveSensor.speedKmh === 'number' && liveSensor.speedKmh > 0) {
+      targetSpeedKmph = Math.min(120.0, liveSensor.speedKmh);
+    } else {
       targetSpeedKmph = 0.0;
       isStopped = true;
-    } else {
-      targetSpeedKmph = Math.min(50.0, 10.0 + liveSensor.accelMag * 10.0);
     }
   }
   sim.speedMps = (targetSpeedKmph / 3.6);

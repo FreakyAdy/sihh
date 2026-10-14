@@ -28,7 +28,7 @@ data class PhoneSensorSample(
     val magneticFieldZ: Float,
     val location: Location?,
     val stepCount: Long = 0L,
-    val azimuthDeg: Double = 0.0,
+    val azimuthDeg: Double = -1.0,
 )
 
 interface SensorCaptureListener {
@@ -56,7 +56,7 @@ class SensorCaptureController(
     private val rotationMatrix = FloatArray(9)
     private val inclinationMatrix = FloatArray(9)
     private val orientationAngles = FloatArray(3)
-    private var currentAzimuthDeg = 0.0
+    private var currentAzimuthDeg = -1.0
     private var latestLocation: Location? = null
     private var latestLocationReceivedNanos = 0L
     private var lastEmittedLocationNanos = 0L

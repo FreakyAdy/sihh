@@ -18,7 +18,7 @@ HMM road-network geometry matching.
 
 ## ⚡ Highlights & Latest Features
 
-- 🗺️ **Live Dynamic Street Map (Leaflet 1.9.4 & CartoDB Voyager)**: Replaced synthetic checkered grids and pre-drawn routes with a real-time vector street map that dynamically traces the path step-by-step behind the user's movement.
+- 🗺️ **Live Dynamic Street Map (Leaflet 1.9.4 & OpenStreetMap)**: Replaced synthetic checkered grids and pre-drawn routes with a real-time OpenStreetMap street cartography that dynamically traces the path step-by-step behind the user's movement (100% free, zero API key required).
 - 🚶 **Physical Pedestrian Dead Reckoning (PDR)**: Uses onboard hardware step detection ($0.75\text{ m/step}$ stride propagation) and a 3D magnetic/gravity orientation matrix so presenters can physically walk around a judging stage with zero GNSS signal while tracing their exact path.
 - 🚨 **Live Tunnel Outage Simulation**: Presenters can tap **"Cut GNSS"** on screen. The app immediately enters `DEAD RECKONING` mode with a pulsing status beacon, accumulating drift, and dynamically drawing a glowing crimson dashed trajectory segment.
 - 🤖 **Physical Rover IP Streaming**: Dedicated Rover IP field in the dashboard with an active `/api/stream` Server-Sent Events (SSE) bridge and CRC16-validated telemetry packets.
@@ -75,7 +75,7 @@ The system solves this with:
 
 ### Android application & Web HUD
 
-- Real-time **Leaflet 1.9.4** street map with CartoDB Voyager tiles.
+- Real-time **Leaflet 1.9.4** street map with OpenStreetMap cartography (zero API keys).
 - Zero pre-drawn routes; dynamic point-by-point path growth.
 - Dual visual trails: Electric lime for GNSS lock; glowing crimson dashed trail for dead reckoning.
 - Hardware step detector (`Sensor.TYPE_STEP_DETECTOR`) and peak acceleration step fallback.

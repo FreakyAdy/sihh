@@ -3301,11 +3301,19 @@
           attributionControl: false
         });
 
-        // Crisp street cartography tiles (CartoDB Voyager)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // OpenStreetMap Real-Time Cartography (100% Free, Zero API Key Required)
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
           maxZoom: 20,
-          subdomains: 'abcd'
-        }).addTo(liveMap);
+          subdomains: 'abc',
+          attribution: '&copy; OpenStreetMap contributors'
+        });
+        osmLayer.on('tileerror', function(error) {
+          if (error.tile && !error.tile._failed) {
+            error.tile._failed = true;
+            error.tile.src = error.tile.src.replace(/tile\.openstreetmap\.fr\/osmfr/, 'tile.openstreetmap.org');
+          }
+        });
+        osmLayer.addTo(liveMap);
 
         // Glow envelope polyline for nominal route
         glowTrailPolyline = L.polyline([], {
